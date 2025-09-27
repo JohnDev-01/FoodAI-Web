@@ -1,6 +1,7 @@
 {
   "hosting": {
-    "public": "public",
+    "site": "foodai-online",
+    "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",
