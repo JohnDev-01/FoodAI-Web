@@ -12,9 +12,7 @@ import type {
   AuthActionResult,
   AuthContextType,
   ClientProfilePayload,
-  ClientSignupPayload,
   RestaurantProfilePayload,
-  RestaurantSignupPayload,
   User,
   UserProfile,
   UserRole,
@@ -307,88 +305,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     []
   );
 
-  const signUpClient = useCallback<AuthContextType['signUpClient']>(
-    async ({ email, password }) => {
-      setLoading(true);
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPABASE_PENDING_ROLE, 'client');
-        localStorage.setItem(STORAGE_KEYS.SUPABASE_POST_AUTH_ROUTE, ROUTES.CLIENT_ONBOARDING);
-
-        const { data, error } = await supabaseClient.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { role: 'client' },
-            emailRedirectTo: `${window.location.origin}${ROUTES.CLIENT_ONBOARDING}`,
-          },
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        const authUser = data.user ?? null;
-        await handleSessionChange(authUser);
-
-        toast.success('Cuenta de cliente creada. Completa tu perfil para continuar.');
-
-        return {
-          success: true,
-          user: buildUserFromSources(null, authUser),
-          needsProfile: true,
-        };
-      } catch (error) {
-        const message = (error as Error).message ?? 'Error desconocido';
-        toast.error('No se pudo crear la cuenta de cliente');
-        return { success: false, error: message };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [handleSessionChange]
-  );
-
-  const signUpRestaurant = useCallback<AuthContextType['signUpRestaurant']>(
-    async ({ email, password }) => {
-      setLoading(true);
-      try {
-        localStorage.setItem(STORAGE_KEYS.SUPABASE_PENDING_ROLE, 'restaurant');
-        localStorage.setItem(STORAGE_KEYS.SUPABASE_POST_AUTH_ROUTE, ROUTES.RESTAURANT_ONBOARDING);
-
-        const { data, error } = await supabaseClient.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { role: 'restaurant' },
-            emailRedirectTo: `${window.location.origin}${ROUTES.RESTAURANT_ONBOARDING}`,
-          },
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        const authUser = data.user ?? null;
-        await handleSessionChange(authUser);
-
-        toast.success('Cuenta creada. Completa tu perfil para continuar.');
-
-        return {
-          success: true,
-          user: buildUserFromSources(null, authUser),
-          needsProfile: true,
-        };
-      } catch (error) {
-        const message = (error as Error).message ?? 'Error desconocido';
-        toast.error('No se pudo crear la cuenta de restaurante');
-        return { success: false, error: message };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [handleSessionChange]
-  );
-
   const completeProfile = useCallback(
     async (
       { firstName, lastName, profileImage }: ClientProfilePayload,
@@ -498,8 +414,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       initialising,
       login,
       loginWithGoogle,
-      signUpClient,
-      signUpRestaurant,
       completeClientProfile,
       completeRestaurantProfile,
       updateProfile,
@@ -518,8 +432,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout,
       refreshProfile,
       sessionUser,
-      signUpClient,
-      signUpRestaurant,
       updateProfile,
       user,
     ]

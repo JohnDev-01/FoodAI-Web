@@ -1,30 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { MotionProps } from 'framer-motion';
 import { ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { ROUTES, USER_TYPES } from '../../constants';
-import type { RegisterForm } from '../../types';
 
 type MotionDivProps = MotionProps & React.HTMLAttributes<HTMLDivElement>;
-type MotionFormProps = MotionProps & React.FormHTMLAttributes<HTMLFormElement>;
 
 const createMotionDiv = (displayName: string) => {
   const Component = React.forwardRef<HTMLDivElement, MotionDivProps>(
     (props, ref) => <motion.div ref={ref} {...props} />
-  );
-  Component.displayName = displayName;
-  return Component;
-};
-
-const createMotionForm = (displayName: string) => {
-  const Component = React.forwardRef<HTMLFormElement, MotionFormProps>(
-    (props, ref) => <motion.form ref={ref} {...props} />
   );
   Component.displayName = displayName;
   return Component;
@@ -35,27 +23,12 @@ const MotionAccent = createMotionDiv('MotionAccent');
 const MotionCard = createMotionDiv('MotionCard');
 const MotionOverlay = createMotionDiv('MotionOverlay');
 const MotionSectionCard = createMotionDiv('MotionSectionCard');
-const MotionForm = createMotionForm('MotionForm');
 
 export function Register() {
-  const { signUpRestaurant, signUpClient, loginWithGoogle, loading } = useAuth();
-  const navigate = useNavigate();
+  const { loginWithGoogle } = useAuth();
   const [userType, setUserType] = useState<'client' | 'restaurant'>('restaurant');
-  const [showEmailForm, setShowEmailForm] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  useEffect(() => {
-    setShowEmailForm(false);
-  }, [userType]);
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<RegisterForm>();
-
-  const password = watch('password');
   const isRestaurant = userType === 'restaurant';
 
   const userTypeOptions = useMemo(() => {
@@ -106,35 +79,12 @@ export function Register() {
     : 'Regístrate como cliente y disfruta de FoodAI';
 
   const subtitle = isRestaurant
-    ? 'Usa tu cuenta de Google para empezar en segundos o completa el formulario si prefieres correo. Te acompañamos paso a paso para activar tu panel inteligente.'
-    : 'Conéctate con Google o correo para guardar tus datos personales, reservas y recomendaciones personalizadas.';
+    ? 'Conéctate con tu cuenta de Google para activar tu panel inteligente de restaurante en segundos.'
+    : 'Usa tu cuenta de Google para guardar tus datos personales, reservas y recomendaciones personalizadas.';
 
-  const emailSubmitLabel = isRestaurant ? 'Crear cuenta de restaurante' : 'Crear cuenta de cliente';
-  const emailPlaceholder = isRestaurant ? 'tu@restaurante.com' : 'tu@email.com';
   const footnoteText = isRestaurant
-    ? 'Al continuar aceptas nuestros términos y autorizas a FoodAI a sincronizar tus datos con Supabase para identificar tu restaurante dentro del ecosistema.'
-    : 'Al continuar autorizas a FoodAI a sincronizar tus datos con Supabase para personalizar tu experiencia como cliente.';
-
-  const onSubmit = async (data: RegisterForm) => {
-    try {
-      const result = isRestaurant
-        ? await signUpRestaurant({
-            email: data.email,
-            password: data.password,
-          })
-        : await signUpClient({
-            email: data.email,
-            password: data.password,
-          });
-
-      if (result.success) {
-        navigate(isRestaurant ? ROUTES.RESTAURANT_ONBOARDING : ROUTES.CLIENT_ONBOARDING);
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      toast.error('No se pudo completar el registro');
-    }
-  };
+    ? 'Al continuar con Google autorizas a FoodAI a sincronizar tus datos con Supabase para configurar tu restaurante dentro del ecosistema.'
+    : 'Al continuar con Google autorizas a FoodAI a sincronizar tus datos con Supabase para personalizar tu experiencia como cliente.';
 
   const handleGoogleSignup = async () => {
     try {
@@ -231,145 +181,44 @@ export function Register() {
               </div>
             </div>
 
-            <AnimatePresence mode="wait">
-              {showEmailForm ? (
-                <MotionForm
-                  key="email-form"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
-                  onSubmit={handleSubmit(onSubmit)}
-                  className="grid gap-5"
+            <MotionSectionCard
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="space-y-6"
+            >
+              <div className="grid gap-4 sm:grid-cols-3">
+                {highlights.map((item) => (
+                  <div
+                    key={item.title}
+                    className="rounded-2xl border border-white/10 bg-white/12 px-4 py-5"
+                  >
+                    <ShieldCheck className="mb-3 h-5 w-5 text-blue-100" />
+                    <p className="text-sm font-semibold text-white">{item.title}</p>
+                    <p className="mt-1 text-xs text-blue-100/70">{item.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-3">
+                <Button
+                  onClick={handleGoogleSignup}
+                  className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white text-gray-900 transition-all hover:shadow-[0_0_40px_-12px_rgba(59,130,246,0.7)] dark:bg-gray-100 dark:text-gray-900"
+                  disabled={googleLoading}
+                  loading={googleLoading}
                 >
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Input
-                      label="Nombre completo"
-                      placeholder="Tu nombre completo"
-                      {...register('name', {
-                        required: 'El nombre es requerido',
-                        minLength: {
-                          value: 2,
-                          message: 'El nombre debe tener al menos 2 caracteres',
-                        },
-                      })}
-                      error={errors.name?.message}
-                    />
-                    <Input
-                      label="Correo electrónico"
-                      type="email"
-                      placeholder={emailPlaceholder}
-                      {...register('email', {
-                        required: 'El correo es requerido',
-                        pattern: {
-                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                          message: 'Formato de correo inválido',
-                        },
-                      })}
-                      error={errors.email?.message}
-                    />
-                    <Input
-                      label="Teléfono (opcional)"
-                      type="tel"
-                      placeholder="+1 809 000 0000"
-                      {...register('phone')}
-                    />
-                    <Input
-                      label="Contraseña"
-                      type="password"
-                      placeholder="Mínimo 8 caracteres"
-                      {...register('password', {
-                        required: 'La contraseña es requerida',
-                        minLength: {
-                          value: 8,
-                          message: 'La contraseña debe tener al menos 8 caracteres',
-                        },
-                      })}
-                      error={errors.password?.message}
-                    />
-                    <Input
-                      label="Confirmar contraseña"
-                      type="password"
-                      placeholder="Repite tu contraseña"
-                      {...register('confirmPassword', {
-                        required: 'Confirma tu contraseña',
-                        validate: (value) =>
-                          value === password || 'Las contraseñas no coinciden',
-                      })}
-                      error={errors.confirmPassword?.message}
-                    />
-                  </div>
+                  <span className="relative z-10 flex items-center gap-3 text-base font-medium">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-green-500 to-red-500 text-xs font-bold text-white">
+                      G
+                    </span>
+                    {googleLoading ? 'Conectando...' : 'Continuar con Google'}
+                  </span>
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                </Button>
+              </div>
 
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <Button
-                      type="submit"
-                      className="w-full sm:w-auto"
-                      loading={loading}
-                      disabled={loading}
-                    >
-                      {emailSubmitLabel}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="text-sm text-blue-200 hover:text-white sm:w-auto"
-                      onClick={() => setShowEmailForm(false)}
-                    >
-                      Prefiero continuar con Google
-                    </Button>
-                  </div>
-                </MotionForm>
-              ) : (
-                <MotionSectionCard
-                  key="google-flow"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="space-y-6"
-                >
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    {highlights.map((item) => (
-                      <div
-                        key={item.title}
-                        className="rounded-2xl border border-white/10 bg-white/12 px-4 py-5"
-                      >
-                        <ShieldCheck className="mb-3 h-5 w-5 text-blue-100" />
-                        <p className="text-sm font-semibold text-white">{item.title}</p>
-                        <p className="mt-1 text-xs text-blue-100/70">{item.description}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="space-y-3">
-                    <Button
-                      onClick={handleGoogleSignup}
-                      className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white text-gray-900 transition-all hover:shadow-[0_0_40px_-12px_rgba(59,130,246,0.7)] dark:bg-gray-100 dark:text-gray-900"
-                      disabled={googleLoading}
-                      loading={googleLoading}
-                    >
-                      <span className="relative z-10 flex items-center gap-3 text-base font-medium">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-green-500 to-red-500 text-xs font-bold text-white">
-                          G
-                        </span>
-                        {googleLoading ? 'Conectando...' : 'Continuar con Google'}
-                      </span>
-                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full text-sm text-blue-200 hover:text-white"
-                      onClick={() => setShowEmailForm(true)}
-                    >
-                      Prefiero registrarme con correo
-                    </Button>
-                  </div>
-
-                  <p className="text-xs text-blue-100/60">{footnoteText}</p>
-                </MotionSectionCard>
-              )}
-            </AnimatePresence>
+              <p className="text-xs text-blue-100/60">{footnoteText}</p>
+            </MotionSectionCard>
 
             <div className="flex flex-col gap-3 pt-2 text-sm text-blue-100/70 sm:flex-row sm:items-center sm:justify-between">
               <span>

@@ -182,25 +182,6 @@ export interface LoginForm {
   password: string;
 }
 
-export interface RegisterForm {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  phone?: string;
-  userType: UserType;
-}
-
-export interface RestaurantSignupPayload {
-  email: string;
-  password: string;
-}
-
-export interface ClientSignupPayload {
-  email: string;
-  password: string;
-}
-
 export interface RestaurantProfilePayload {
   firstName: string;
   lastName: string;
@@ -235,8 +216,6 @@ export interface AuthContextType {
   initialising: boolean;
   login: (email: string, password: string) => Promise<AuthActionResult>;
   loginWithGoogle: (role?: UserRole) => Promise<void>;
-  signUpClient: (payload: ClientSignupPayload) => Promise<AuthActionResult>;
-  signUpRestaurant: (payload: RestaurantSignupPayload) => Promise<AuthActionResult>;
   completeClientProfile: (payload: ClientProfilePayload) => Promise<AuthActionResult>;
   completeRestaurantProfile: (payload: RestaurantProfilePayload) => Promise<AuthActionResult>;
   updateProfile: (data: Partial<User>) => Promise<void>;
