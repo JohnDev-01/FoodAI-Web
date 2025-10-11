@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { ROUTES } from '../constants';
+import { useAuth } from '../context/AuthContext';
 
 export function Home() {
+  const { user } = useAuth();
+
   const features = [
     {
       title: 'Restaurantes Inteligentes',
@@ -51,16 +54,25 @@ export function Home() {
             con tecnología de vanguardia y análisis predictivo.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {user?.role === 'restaurant' && (
+              <Link to={ROUTES.RESTAURANT_DASHBOARD}>
+                <Button size="lg" className="text-lg px-8 py-3">
+                  Ir al Dashboard
+                </Button>
+              </Link>
+            )}
             <Link to={ROUTES.RESTAURANTS}>
               <Button size="lg" className="text-lg px-8 py-3">
                 Explorar Restaurantes
               </Button>
             </Link>
-            <Link to={ROUTES.REGISTER}>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-3">
-                Registrarse
-              </Button>
-            </Link>
+            {!user && (
+              <Link to={ROUTES.REGISTER}>
+                <Button variant="outline" size="lg" className="text-lg px-8 py-3">
+                  Registrarse
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </section>

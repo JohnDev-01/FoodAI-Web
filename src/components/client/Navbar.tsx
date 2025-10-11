@@ -90,6 +90,18 @@ export function Navbar() {
               </Button>
             </Link>
 
+            {/* Dashboard CTA */}
+            {user?.role === 'restaurant' && (
+              <Link to={ROUTES.RESTAURANT_DASHBOARD} className="hidden md:block">
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow-lg shadow-blue-500/30 hover:from-blue-600 hover:via-indigo-500 hover:to-purple-500 border-0"
+                >
+                  Ir al Dashboard
+                </Button>
+              </Link>
+            )}
+
             {/* User menu */}
             {user ? (
               <div className="flex items-center space-x-2">
@@ -154,6 +166,17 @@ export function Navbar() {
                   {item.name}
                 </Link>
               ))}
+              {user?.role === 'restaurant' && (
+                <Link
+                  to={ROUTES.RESTAURANT_DASHBOARD}
+                  className="block mt-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Button className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow-lg shadow-blue-500/30 hover:from-blue-600 hover:via-indigo-500 hover:to-purple-500 border-0">
+                    Ir al Dashboard
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -161,6 +184,5 @@ export function Navbar() {
     </nav>
   );
 }
-
 
 
