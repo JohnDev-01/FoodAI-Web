@@ -1,29 +1,61 @@
+import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
+
+export type UserRole = 'client' | 'restaurant' | 'admin';
+export type UserStatus = 'active' | 'suspended' | 'pending';
+export type UserType = UserRole;
+
 // User types
-export interface User {
+export interface UserProfile {
   id: string;
+  authId: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  name: string;
-  phone?: string;
-  avatar?: string;
+  role: UserRole;
+  profileImage?: string | null;
+  status: UserStatus;
   createdAt: string;
   updatedAt: string;
 }
 
-export type UserType = 'client' | 'restaurant' | 'admin';
+export interface User {
+  id: string;
+  authId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  name: string;
+  role: UserRole | null;
+  status: UserStatus;
+  profileImage?: string | null;
+  phone?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 // Restaurant types
+export type RestaurantStatus = 'active' | 'suspended' | 'pending';
+
 export interface Restaurant {
   id: string;
-  name: string;
-  description: string;
-  address: string;
-  phone: string;
-  email: string;
-  cuisine: string;
-  rating: number;
-  imageUrl: string;
-  isActive: boolean;
   ownerId: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  description?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  cuisine?: string | null;
+  cuisineType?: string | null;
+  openTime?: string | null;
+  closeTime?: string | null;
+  logoUrl?: string | null;
+  rating?: number | null;
+  status: RestaurantStatus;
+  imageUrl?: string;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -146,6 +178,25 @@ export interface RegisterForm {
   userType: UserType;
 }
 
+export interface RestaurantSignupPayload {
+  email: string;
+  password: string;
+}
+
+export interface RestaurantProfilePayload {
+  firstName: string;
+  lastName: string;
+  profileImage?: string | null;
+}
+
+export interface AuthActionResult {
+  success: boolean;
+  user?: User | null;
+  needsProfile?: boolean;
+  error?: string;
+  message?: string;
+}
+
 export interface RestaurantForm {
   name: string;
   description: string;
@@ -159,12 +210,16 @@ export interface RestaurantForm {
 // Context types
 export interface AuthContextType {
   user: User | null;
-  userType: UserType | null;
+  sessionUser: SupabaseAuthUser | null;
   loading: boolean;
-  login: (email: string, password: string, type?: UserType) => Promise<{ success: boolean; user?: User; error?: string }>;
-  register: (formData: RegisterForm) => Promise<{ success: boolean; user?: User; error?: string }>;
-  logout: () => void;
+  initialising: boolean;
+  login: (email: string, password: string) => Promise<AuthActionResult>;
+  loginWithGoogle: (role?: UserRole) => Promise<void>;
+  signUpRestaurant: (payload: RestaurantSignupPayload) => Promise<AuthActionResult>;
+  completeRestaurantProfile: (payload: RestaurantProfilePayload) => Promise<AuthActionResult>;
   updateProfile: (data: Partial<User>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  logout: () => Promise<void>;
   isClient: () => boolean;
   isRestaurant: () => boolean;
   isAdmin: () => boolean;

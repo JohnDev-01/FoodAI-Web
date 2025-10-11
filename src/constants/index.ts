@@ -121,6 +121,8 @@ export const STORAGE_KEYS = {
   USER_TOKEN: 'foodai_user_token',
   USER_DATA: 'foodai_user_data',
   USER_TYPE: 'userType',
+  SUPABASE_PENDING_ROLE: 'supabasePendingRole',
+  SUPABASE_POST_AUTH_ROUTE: 'supabasePostAuthRoute',
   CART: 'cart',
   CART_RESTAURANT_ID: 'cartRestaurantId',
   THEME: 'foodai_theme',

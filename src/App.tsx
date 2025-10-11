@@ -17,9 +17,11 @@ import { RestaurantList } from './pages/client/RestaurantList';
 import { About } from './pages/About';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
+import { AuthCallback } from './pages/auth/AuthCallback';
 
 // Dashboard Restaurante
 import { RestaurantDashboard } from './pages/restaurant/Dashboard';
+import { RestaurantOnboarding } from './pages/restaurant/Onboarding';
 
 // Admin
 import { AdminDashboard } from './pages/admin/Dashboard';
@@ -61,7 +63,18 @@ function App() {
                   <Route path="/auth">
                     <Route path="login" element={<Login />} />
                     <Route path="register" element={<Register />} />
+                    <Route path="callback" element={<AuthCallback />} />
                   </Route>
+
+                  {/* Flujo de onboarding restaurante */}
+                  <Route
+                    path="/restaurant/onboarding"
+                    element={
+                      <ProtectedRoute requireProfile={false}>
+                        <RestaurantOnboarding />
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Rutas protegidas - Dashboard Restaurante */}
                   <Route path="/restaurant" element={

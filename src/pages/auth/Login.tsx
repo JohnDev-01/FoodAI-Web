@@ -1,165 +1,191 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
-import { ROUTES, USER_TYPES } from '../../constants';
-import type { LoginForm } from '../../types';
+import { ROUTES } from '../../constants';
+
+const MotionContainer = motion.div as any;
+const MotionCard = motion.div as any;
+const MotionGlow = motion.div as any;
 
 export function Login() {
-  const { login, loading } = useAuth();
+  const { loginWithGoogle, loading, user } = useAuth();
   const navigate = useNavigate();
-  const [userType, setUserType] = useState<'client' | 'restaurant' | 'admin'>('client');
-  
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginForm>();
+  const location = useLocation();
+  const [authLoading, setAuthLoading] = useState(false);
 
-  const onSubmit = async (data: LoginForm) => {
+  const status = useMemo(
+    () => new URLSearchParams(location.search).get('status'),
+    [location.search]
+  );
+  const missingAccount = status === 'no-account';
+
+  useEffect(() => {
+    if (loading || !user) {
+      return;
+    }
+
+    if (user.role === 'restaurant') {
+      navigate(ROUTES.RESTAURANT_DASHBOARD, { replace: true });
+    } else if (user.role === 'admin') {
+      navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+    } else {
+      navigate(ROUTES.HOME, { replace: true });
+    }
+  }, [loading, user, navigate]);
+
+  const handleGoogleSignIn = async () => {
     try {
-      const result = await login(data.email, data.password, userType);
-      if (result.success) {
-        // Redirigir según el tipo de usuario
-        if (userType === 'admin') {
-          navigate(ROUTES.ADMIN_DASHBOARD);
-        } else if (userType === 'restaurant') {
-          navigate(ROUTES.RESTAURANT_DASHBOARD);
-        } else {
-          navigate(ROUTES.HOME);
-        }
-      }
+      setAuthLoading(true);
+      await loginWithGoogle();
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Google auth error:', error);
+      setAuthLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xl">F</span>
-          </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
-            Iniciar Sesión
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            O{' '}
-            <Link
-              to={ROUTES.REGISTER}
-              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
-            >
-              regístrate aquí
-            </Link>
-          </p>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-950 via-slate-900 to-purple-950 text-white">
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute -top-1/4 -left-1/3 h-[60vw] w-[60vw] rounded-full bg-blue-500 blur-3xl" />
+        <div className="absolute -bottom-1/3 right-0 h-[50vw] w-[50vw] rounded-full bg-purple-600 blur-3xl" />
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Accede a tu cuenta</CardTitle>
-            <CardDescription>
-              Selecciona tu tipo de usuario e ingresa tus credenciales
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* User Type Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tipo de Usuario
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(USER_TYPES).map(([key, value]) => (
-                    <Button
-                      key={key}
-                      type="button"
-                      variant={userType === value ? 'primary' : 'outline'}
-                      size="sm"
-                      onClick={() => setUserType(value as any)}
-                      className="text-xs"
-                    >
-                      {value === 'client' ? 'Cliente' : 
-                       value === 'restaurant' ? 'Restaurante' : 'Admin'}
-                    </Button>
-                  ))}
-                </div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.15),_transparent_55%)]" />
+
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-16">
+        <MotionContainer
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="grid w-full max-w-5xl gap-10 lg:grid-cols-[1.2fr_1fr]"
+        >
+          <MotionCard
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6, ease: 'easeOut' }}
+            className="relative overflow-hidden rounded-[32px] border border-white/10 bg-white/5 p-10 backdrop-blur-2xl"
+          >
+            <MotionGlow
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.35),_transparent_65%)]"
+            />
+
+            <div className="relative space-y-6">
+              <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-blue-100">
+                <Sparkles className="h-4 w-4" />
+                Acceso Seguro
               </div>
 
-              {/* Email */}
-              <div>
-                <Input
-                  label="Correo Electrónico"
-                  type="email"
-                  placeholder="tu@email.com"
-                  {...register('email', {
-                    required: 'El correo es requerido',
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: 'Formato de correo inválido',
-                    },
-                  })}
-                  error={errors.email?.message}
-                />
+              <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
+                Inicia sesión con Google y gestiona tu experiencia FoodAI.
+              </h1>
+
+              <p className="text-lg text-blue-100/80">
+                Accede al centro de control para restaurantes con Analytics en tiempo real, pedidos
+                inteligentes y herramientas potenciadas por IA.
+              </p>
+
+              <div className="grid gap-4">
+                {[
+                  {
+                    title: 'Acceso ultra seguro',
+                    description: 'Autenticación OAuth 2.0 manejada por Supabase + Google.',
+                  },
+                  {
+                    title: 'Sin contraseñas manuales',
+                    description: 'Evita credenciales duplicadas; basta tu cuenta corporativa de Google.',
+                  },
+                  {
+                    title: 'Continuidad inmediata',
+                    description:
+                      'Si tu restaurante ya está registrado, te llevamos directo al dashboard.',
+                  },
+                ].map((feature) => (
+                  <div key={feature.title} className="flex items-start gap-3">
+                    <ShieldCheck className="mt-1 h-5 w-5 text-blue-300" />
+                    <div>
+                      <p className="font-semibold text-white">{feature.title}</p>
+                      <p className="text-sm text-blue-100/70">{feature.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
 
-              {/* Password */}
-              <div>
-                <Input
-                  label="Contraseña"
-                  type="password"
-                  placeholder="Tu contraseña"
-                  {...register('password', {
-                    required: 'La contraseña es requerida',
-                    minLength: {
-                      value: 6,
-                      message: 'La contraseña debe tener al menos 6 caracteres',
-                    },
-                  })}
-                  error={errors.password?.message}
-                />
-              </div>
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full"
-                loading={loading}
-                disabled={loading}
-              >
-                Iniciar Sesión
-              </Button>
-            </form>
-
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">
-                    ¿No tienes cuenta?
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-6">
+            <div className="mt-10">
+              <p className="text-xs uppercase tracking-[0.3em] text-blue-100/60">¿Nuevo aquí?</p>
+              <div className="mt-3 flex items-center gap-3">
                 <Link to={ROUTES.REGISTER}>
-                  <Button variant="outline" className="w-full">
-                    Crear Nueva Cuenta
+                  <Button variant="outline" className="border-white/30 bg-white/10 text-white">
+                    Crear cuenta de restaurante
                   </Button>
+                </Link>
+                <Link to={ROUTES.HOME} className="group inline-flex items-center text-sm text-blue-200">
+                  Volver al inicio
+                  <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </MotionCard>
+
+          <MotionCard
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
+            className="relative flex h-full flex-col justify-between rounded-[28px] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-2xl font-bold text-white shadow-lg shadow-blue-500/40">
+                  F
+                </div>
+              </div>
+
+              <h2 className="text-center text-2xl font-semibold text-white">
+                Bienvenido de nuevo
+              </h2>
+              <p className="text-center text-sm text-blue-100/70">
+                Accede con tu cuenta de Google registrada. Si aún no te has dado de alta, crea tu
+                perfil de restaurante en segundos.
+              </p>
+
+              {missingAccount && (
+                <div className="rounded-xl border border-red-300/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                  <strong className="block text-red-200">Tu correo no está registrado.</strong>
+                  Completa el formulario de registro para crear tu cuenta de restaurante y habilitar
+                  el acceso.
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <Button
+                onClick={handleGoogleSignIn}
+                className="h-12 w-full border border-white/20 bg-white text-gray-900 hover:bg-white/90 dark:bg-gray-100 dark:text-gray-900"
+                disabled={authLoading}
+                loading={authLoading}
+              >
+                <span className="flex items-center justify-center gap-3 text-base">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-green-500 to-red-500 text-xs font-bold text-white">
+                    G
+                  </span>
+                  Continuar con Google
+                </span>
+              </Button>
+
+              <p className="text-center text-xs text-blue-100/60">
+                FoodAI solo permitirá el acceso si el correo autenticado pertenece a un restaurante
+                dado de alta.
+              </p>
+            </div>
+          </MotionCard>
+        </MotionContainer>
       </div>
     </div>
   );
 }
-
-
-

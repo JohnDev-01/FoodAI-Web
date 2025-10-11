@@ -9,10 +9,18 @@ interface RestaurantRouteProps {
 }
 
 export function RestaurantRoute({ children }: RestaurantRouteProps) {
-  const { user, isRestaurant } = useAuth();
+  const { user, sessionUser, initialising, isRestaurant } = useAuth();
+
+  if (initialising) {
+    return null;
+  }
+
+  if (!sessionUser) {
+    return <Navigate to={ROUTES.LOGIN} replace />;
+  }
 
   if (!user) {
-    return <Navigate to={ROUTES.LOGIN} replace />;
+    return <Navigate to={ROUTES.RESTAURANT_ONBOARDING} replace />;
   }
 
   if (!isRestaurant()) {
@@ -21,6 +29,3 @@ export function RestaurantRoute({ children }: RestaurantRouteProps) {
 
   return <>{children}</>;
 }
-
-
-
