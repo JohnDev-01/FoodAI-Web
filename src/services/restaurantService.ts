@@ -136,3 +136,63 @@ export async function listActiveRestaurants() {
 
   return (data as RestaurantDbRow[]).map(mapToRestaurant);
 }
+
+export interface RestaurantSearchOptions {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  status?: RestaurantStatus | 'all';
+}
+
+export interface RestaurantSearchResult {
+  items: Restaurant[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+export async function searchRestaurants({
+  search,
+  page = 1,
+  pageSize = 6,
+  status = 'active',
+}: RestaurantSearchOptions = {}): Promise<RestaurantSearchResult> {
+  const currentPage = Math.max(1, page);
+  const effectivePageSize = Math.max(1, pageSize);
+  const from = (currentPage - 1) * effectivePageSize;
+  const to = from + effectivePageSize - 1;
+
+  let query = supabaseClient
+    .from('restaurants')
+    .select('*', { count: 'exact' })
+    .order('name', { ascending: true });
+
+  if (status !== 'all') {
+    query = query.eq('status', status ?? 'active');
+  }
+
+  if (search && search.trim().length > 0) {
+    const normalized = `%${search.trim()}%`;
+    query = query.ilike('name', normalized);
+  }
+
+  const { data, error, count } = await query.range(from, to);
+
+  if (error) {
+    throw error;
+  }
+
+  const total = count ?? 0;
+  const items = ((data ?? []) as RestaurantDbRow[]).map(mapToRestaurant);
+  const hasMore =
+    total > 0 ? to + 1 < total : items.length === effectivePageSize;
+
+  return {
+    items,
+    total,
+    page: currentPage,
+    pageSize: effectivePageSize,
+    hasMore,
+  };
+}

@@ -1,15 +1,26 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
-import { Loader2, CalendarDays, Clock, Users, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  Loader2,
+  CalendarDays,
+  Clock,
+  Users,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
+  Search,
+  MapPin,
+  X,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { ROUTES } from '../../constants';
 import type { ReservationStatus, ReservationWithRestaurant, Restaurant } from '../../types';
 import { createReservation, getReservationsByUserId, cancelReservation } from '../../services/reservationService';
-import { listActiveRestaurants } from '../../services/restaurantService';
+import { searchRestaurants } from '../../services/restaurantService';
 
 type ReservationFormValues = {
   restaurantId: string;
@@ -42,17 +53,18 @@ const todayIso = () => {
 
 export function Reservations() {
   const { user, initialising } = useAuth();
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [reservations, setReservations] = useState<ReservationWithRestaurant[]>([]);
-  const [loadingRestaurants, setLoadingRestaurants] = useState<boolean>(false);
   const [loadingReservations, setLoadingReservations] = useState<boolean>(false);
   const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
+  const [restaurantPickerOpen, setRestaurantPickerOpen] = useState<boolean>(false);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
-    watch,
+    setValue,
+    clearErrors,
     formState: { errors },
   } = useForm<ReservationFormValues>({
     defaultValues: {
@@ -63,35 +75,25 @@ export function Reservations() {
       specialRequest: '',
     },
   });
+  const {
+    ref: restaurantIdRef,
+    ...restaurantIdField
+  } = register('restaurantId', {
+    required: 'Selecciona un restaurante',
+  });
 
-  const selectedRestaurantId = watch('restaurantId');
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadRestaurants = async () => {
-      try {
-        setLoadingRestaurants(true);
-        const data = await listActiveRestaurants();
-        if (mounted) {
-          setRestaurants(data);
-        }
-      } catch (error) {
-        console.error('Error al cargar restaurantes:', error);
-        toast.error('No pudimos cargar los restaurantes disponibles.');
-      } finally {
-        if (mounted) {
-          setLoadingRestaurants(false);
-        }
-      }
-    };
-
-    loadRestaurants();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const handleRestaurantSelect = useCallback(
+    (restaurant: Restaurant) => {
+      setSelectedRestaurant(restaurant);
+      setValue('restaurantId', restaurant.id, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      clearErrors('restaurantId');
+      setRestaurantPickerOpen(false);
+    },
+    [clearErrors, setValue]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -308,27 +310,57 @@ export function Reservations() {
                   <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Restaurante
                   </label>
-                  <div className="relative">
-                    <select
-                      className="w-full appearance-none rounded-2xl border border-gray-200 bg-white/90 px-4 py-3 text-sm text-gray-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                      {...register('restaurantId', {
-                        required: 'Selecciona un restaurante',
-                      })}
-                      disabled={loadingRestaurants}
-                    >
-                      <option value="">
-                        {loadingRestaurants ? 'Cargando restaurantes...' : 'Selecciona un restaurante'}
-                      </option>
-                      {restaurants.map((restaurant) => (
-                        <option key={restaurant.id} value={restaurant.id}>
-                          {restaurant.name}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-                      ▼
+                  <input type="hidden" ref={restaurantIdRef} {...restaurantIdField} />
+                  <button
+                    type="button"
+                    onClick={() => setRestaurantPickerOpen(true)}
+                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white/90 px-4 py-3 text-left text-sm text-gray-800 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-200 hover:border-blue-500 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-100 dark:hover:border-blue-400 dark:focus:ring-blue-500/20"
+                  >
+                    <div className="flex flex-1 items-center gap-3">
+                      {selectedRestaurant ? (
+                        selectedRestaurant.logoUrl ? (
+                          <img
+                            src={selectedRestaurant.logoUrl}
+                            alt={`Logo de ${selectedRestaurant.name}`}
+                            className="h-10 w-10 rounded-full border border-gray-200 object-cover dark:border-gray-700"
+                          />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 text-sm font-semibold text-white">
+                            {selectedRestaurant.name[0]?.toUpperCase() ?? 'R'}
+                          </div>
+                        )
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 text-blue-500 dark:bg-blue-500/15 dark:text-blue-200">
+                          <Search className="h-4 w-4" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        {selectedRestaurant ? (
+                          <>
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              {selectedRestaurant.name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              <span className="inline-flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {selectedRestaurant.city ?? 'Ubicación no disponible'}
+                              </span>
+                              {selectedRestaurant.cuisineType
+                                ? ` • ${selectedRestaurant.cuisineType}`
+                                : ''}
+                            </p>
+                          </>
+                        ) : (
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            Buscar y seleccionar un restaurante
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold text-blue-600 dark:text-blue-300">
+                      Abrir
                     </span>
-                  </div>
+                  </button>
                   {errors.restaurantId && (
                     <p className="mt-1 text-xs text-rose-500">{errors.restaurantId.message}</p>
                   )}
@@ -377,7 +409,7 @@ export function Reservations() {
                   </div>
                 </div>
 
-                {selectedRestaurantId && (
+                {selectedRestaurant && (
                   <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-600 dark:border-blue-700/60 dark:bg-blue-900/20 dark:text-blue-200">
                     Recibirás un correo cuando el restaurante confirme la reserva. Puedes revisar el estado en esta misma página.
                   </div>
@@ -483,6 +515,287 @@ export function Reservations() {
             </div>
           </section>
         </main>
+      </div>
+      <RestaurantSearchModal
+        open={restaurantPickerOpen}
+        onClose={() => setRestaurantPickerOpen(false)}
+        onSelect={handleRestaurantSelect}
+        selectedRestaurantId={selectedRestaurant?.id ?? null}
+      />
+    </div>
+  );
+}
+
+interface RestaurantSearchModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSelect: (restaurant: Restaurant) => void;
+  selectedRestaurantId?: string | null;
+}
+
+function RestaurantSearchModal({
+  open,
+  onClose,
+  onSelect,
+  selectedRestaurantId,
+}: RestaurantSearchModalProps) {
+  const pageSize = 6;
+  const [pendingTerm, setPendingTerm] = useState('');
+  const [debouncedTerm, setDebouncedTerm] = useState('');
+  const [results, setResults] = useState<Restaurant[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const fetchIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!open) {
+      fetchIdRef.current += 1;
+      setPendingTerm('');
+      setDebouncedTerm('');
+      setResults([]);
+      setError(null);
+      setPage(1);
+      setHasMore(false);
+      setTotal(0);
+      setLoading(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handler = setTimeout(() => {
+      setDebouncedTerm(pendingTerm.trim());
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [pendingTerm, open]);
+
+  const fetchPage = useCallback(
+    async ({ term, targetPage, replace }: { term: string; targetPage: number; replace: boolean }) => {
+      setLoading(true);
+      setError(null);
+      const requestId = ++fetchIdRef.current;
+
+      try {
+        const response = await searchRestaurants({
+          search: term,
+          page: targetPage,
+          pageSize,
+        });
+
+        if (fetchIdRef.current !== requestId) {
+          return;
+        }
+
+        setResults((prev) => (replace ? response.items : [...prev, ...response.items]));
+        setTotal(response.total);
+        setHasMore(response.hasMore);
+        setPage(response.page);
+      } catch (err) {
+        if (fetchIdRef.current !== requestId) {
+          return;
+        }
+        console.error('Error buscando restaurantes:', err);
+        setError('No se pudieron cargar los restaurantes.');
+      } finally {
+        if (fetchIdRef.current === requestId) {
+          setLoading(false);
+        }
+      }
+    },
+    [pageSize]
+  );
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    setResults([]);
+    setError(null);
+    setHasMore(false);
+    setPage(1);
+    fetchPage({ term: debouncedTerm, targetPage: 1, replace: true });
+  }, [debouncedTerm, open, fetchPage]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [open]);
+
+  const handleLoadMore = () => {
+    if (loading || !hasMore) {
+      return;
+    }
+
+    fetchPage({ term: debouncedTerm, targetPage: page + 1, replace: false });
+  };
+
+  if (!open) {
+    return null;
+  }
+
+  const displayedCount = results.length;
+  const totalLabel = total > 0 ? total : null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm px-4"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-white text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-900 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-700"
+          aria-label="Cerrar buscador de restaurantes"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="border-b border-slate-200/60 px-6 py-6 dark:border-slate-700">
+          <h2 className="text-xl font-semibold">Buscar restaurante</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Escribe para filtrar por nombre y selecciona el restaurante ideal para tu reserva.
+          </p>
+          <div className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 dark:border-slate-700 dark:bg-slate-800 dark:focus-within:border-blue-400 dark:focus-within:ring-blue-500/30">
+            <Search className="h-4 w-4 text-slate-400" />
+            <input
+              value={pendingTerm}
+              onChange={(event) => setPendingTerm(event.target.value)}
+              placeholder="Buscar por nombre"
+              className="w-full bg-transparent text-sm text-slate-800 outline-none dark:text-slate-100"
+              autoFocus
+            />
+          </div>
+        </div>
+
+        <div className="max-h-[60vh] overflow-y-auto px-6 py-6">
+          {loading && results.length === 0 ? (
+            <div className="flex items-center justify-center gap-3 py-12 text-sm text-slate-500 dark:text-slate-300">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Cargando restaurantes...
+            </div>
+          ) : error ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-600 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200">
+              {error}
+            </div>
+          ) : results.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+              No encontramos restaurantes coincidentes.
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {results.map((restaurant) => {
+                const isSelected = restaurant.id === selectedRestaurantId;
+                return (
+                  <button
+                    key={restaurant.id}
+                    type="button"
+                    onClick={() => onSelect(restaurant)}
+                    className={`flex items-center gap-4 rounded-2xl border px-4 py-4 text-left transition shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30 ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50/60 dark:border-blue-500 dark:bg-blue-500/10'
+                        : 'border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-400 dark:hover:bg-blue-500/10'
+                    }`}
+                  >
+                    {restaurant.logoUrl ? (
+                      <img
+                        src={restaurant.logoUrl}
+                        alt={`Logo de ${restaurant.name}`}
+                        className="h-14 w-14 flex-shrink-0 rounded-full border border-slate-200 object-cover dark:border-slate-600"
+                      />
+                    ) : (
+                      <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 text-lg font-semibold text-white">
+                        {restaurant.name[0]?.toUpperCase() ?? 'R'}
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-slate-900 dark:text-white">
+                        {restaurant.name}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        {(restaurant.city || restaurant.country) && (
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {[restaurant.city, restaurant.country].filter(Boolean).join(', ') || 'Ubicación no disponible'}
+                          </span>
+                        )}
+                        {restaurant.cuisineType && (
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-700/70 dark:text-slate-200">
+                            {restaurant.cuisineType}
+                          </span>
+                        )}
+                      </div>
+                      {restaurant.description && (
+                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                          {restaurant.description}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between border-t border-slate-200/60 px-6 py-4 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-300">
+          <span>
+            Mostrando {displayedCount}
+            {totalLabel ? ` de ${totalLabel}` : ''} restaurantes
+          </span>
+          {hasMore && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={handleLoadMore}
+              disabled={loading}
+            >
+              {loading ? 'Cargando...' : 'Cargar más'}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
