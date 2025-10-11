@@ -129,6 +129,14 @@ export interface ReservationWithRestaurant extends Reservation {
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
+export interface CreateReservationPayload {
+  restaurantId: string;
+  date: string;
+  time: string;
+  partySize: number;
+  notes?: string;
+}
+
 // Cart types
 export interface CartItem {
   id: string;

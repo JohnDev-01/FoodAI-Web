@@ -1,5 +1,9 @@
 import { supabaseClient } from './supabaseClient';
-import type { ReservationWithRestaurant, ReservationStatus } from '../types';
+import type {
+  CreateReservationPayload,
+  ReservationWithRestaurant,
+  ReservationStatus,
+} from '../types';
 
 interface ReservationDbRow {
   id: string;
@@ -60,4 +64,59 @@ export async function getReservationsByUserId(userId: string) {
   }
 
   return (data as ReservationDbRow[]).map(mapReservation);
+}
+
+export async function createReservation(userId: string, payload: CreateReservationPayload) {
+  const { data, error } = await supabaseClient
+    .from('reservations')
+    .insert({
+      user_id: userId,
+      restaurant_id: payload.restaurantId,
+      date: payload.date,
+      time: payload.time,
+      party_size: payload.partySize,
+      status: 'pending',
+      notes: payload.notes ?? null,
+    })
+    .select(
+      `
+        *,
+        restaurant:restaurants (
+          id,
+          name,
+          logo_url
+        )
+      `
+    )
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapReservation(data as ReservationDbRow);
+}
+
+export async function cancelReservation(reservationId: string) {
+  const { data, error } = await supabaseClient
+    .from('reservations')
+    .update({ status: 'cancelled' })
+    .eq('id', reservationId)
+    .select(
+      `
+        *,
+        restaurant:restaurants (
+          id,
+          name,
+          logo_url
+        )
+      `
+    )
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapReservation(data as ReservationDbRow);
 }

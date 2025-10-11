@@ -122,3 +122,17 @@ export async function upsertRestaurant(input: RestaurantUpsertInput) {
 
   return mapToRestaurant(data as RestaurantDbRow);
 }
+
+export async function listActiveRestaurants() {
+  const { data, error } = await supabaseClient
+    .from('restaurants')
+    .select('*')
+    .eq('status', 'active')
+    .order('name', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as RestaurantDbRow[]).map(mapToRestaurant);
+}

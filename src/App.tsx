@@ -14,6 +14,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 // Cliente - Vista Principal
 import { Home } from './pages/Home';
 import { RestaurantList } from './pages/client/RestaurantList';
+import { Reservations } from './pages/client/Reservations';
 import { About } from './pages/About';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
@@ -56,6 +57,14 @@ function App() {
                   <Route path="/" element={<ClientLayout />}>
                     <Route index element={<Home />} />
                     <Route path="restaurants" element={<RestaurantList />} />
+                    <Route
+                      path="reservations"
+                      element={
+                        <ProtectedRoute requireProfile={false}>
+                          <Reservations />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="about" element={<About />} />
                     {/* Add more client routes as needed */}
                   </Route>
