@@ -1,13 +1,28 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import type { MotionProps } from 'framer-motion';
 import { ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { ROUTES } from '../../constants';
 
-const MotionContainer = motion.div as any;
-const MotionCard = motion.div as any;
+type MotionDivProps = MotionProps & React.HTMLAttributes<HTMLDivElement>;
+
+const createMotionDiv = (displayName: string) => {
+  const Component = React.forwardRef<HTMLDivElement, MotionDivProps>(
+    (props, ref) => <motion.div ref={ref} {...props} />
+  );
+  Component.displayName = displayName;
+  return Component;
+};
+
+const MotionBackdrop = createMotionDiv('MotionBackdrop');
+const MotionAccent = createMotionDiv('MotionAccent');
+const MotionContainer = createMotionDiv('MotionContainer');
+const MotionCard = createMotionDiv('MotionCard');
+const MotionOverlay = createMotionDiv('MotionOverlay');
+const MotionAlert = createMotionDiv('MotionAlert');
 
 export function Login() {
   const { loginWithGoogle, loading, user } = useAuth();
@@ -48,13 +63,13 @@ export function Login() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#06091c] via-[#0b1332] to-[#151d3f] text-white">
       <div className="pointer-events-none absolute inset-0">
-        <motion.div
+        <MotionBackdrop
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 0.45, scale: 1 }}
           transition={{ duration: 1.2, ease: 'easeOut' }}
           className="absolute -top-32 left-1/2 h-[460px] w-[460px] -translate-x-1/2 rounded-full bg-gradient-to-br from-blue-500/60 via-indigo-400/40 to-purple-500/30 blur-3xl"
         />
-        <motion.div
+        <MotionAccent
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 0.2, y: 0 }}
           transition={{ duration: 1, delay: 0.15 }}
@@ -76,7 +91,7 @@ export function Login() {
             transition={{ delay: 0.1, duration: 0.6, ease: 'easeOut' }}
             className="relative overflow-hidden rounded-[34px] border border-white/12 bg-white/12 p-10 shadow-[0_35px_120px_-45px_rgba(15,40,120,0.6)] backdrop-blur-2xl"
           >
-            <motion.div
+            <MotionOverlay
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.15, duration: 0.6 }}
@@ -111,7 +126,7 @@ export function Login() {
               </div>
 
               {missingAccount && (
-                <motion.div
+                <MotionAlert
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
@@ -119,7 +134,7 @@ export function Login() {
                 >
                   <strong className="block text-red-200">Tu correo no está registrado.</strong>
                   Completa el registro de restaurante para habilitar el acceso seguro.
-                </motion.div>
+                </MotionAlert>
               )}
 
               <div className="space-y-4">

@@ -2,7 +2,6 @@
 export const USER_TYPES = {
   CLIENT: 'client',
   RESTAURANT: 'restaurant',
-  ADMIN: 'admin',
 } as const;
 
 export const ORDER_STATUS = {
