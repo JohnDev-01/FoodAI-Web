@@ -78,6 +78,7 @@ export const ROUTES = {
   ORDER_TRACKING: '/order/:id',
   RESERVATIONS: '/reservations',
   ACCOUNT: '/account',
+  CLIENT_ONBOARDING: '/client/onboarding',
   
   // Autenticación
   LOGIN: '/auth/login',

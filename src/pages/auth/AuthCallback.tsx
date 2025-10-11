@@ -8,6 +8,13 @@ import { supabaseClient } from '../../services/supabaseClient';
 
 const MotionWrapper = motion.div as any;
 
+const mapToSupportedRole = (role: string | null | undefined) => {
+  if (!role) {
+    return null;
+  }
+  return role === 'user' ? 'client' : role;
+};
+
 export function AuthCallback() {
   const { sessionUser, user, refreshProfile } = useAuth();
   const navigate = useNavigate();
@@ -44,6 +51,7 @@ export function AuthCallback() {
       }
 
       const pendingRole = localStorage.getItem(STORAGE_KEYS.SUPABASE_PENDING_ROLE);
+      const normalizedPendingRole = mapToSupportedRole(pendingRole);
 
       const clearPending = () => {
         localStorage.removeItem(STORAGE_KEYS.SUPABASE_PENDING_ROLE);
@@ -51,18 +59,23 @@ export function AuthCallback() {
       };
 
       if (!user) {
-        if (pendingRole === 'restaurant') {
+        if (normalizedPendingRole === 'restaurant') {
           navigate(ROUTES.RESTAURANT_ONBOARDING, { replace: true });
           return;
         }
-
+        if (normalizedPendingRole === 'client') {
+          navigate(ROUTES.CLIENT_ONBOARDING, { replace: true });
+          return;
+        }
         clearPending();
         await supabaseClient.auth.signOut();
         navigate(`${ROUTES.LOGIN}?status=no-account`, { replace: true });
         return;
       }
 
-      if (user.role === 'restaurant') {
+      const userRole = mapToSupportedRole(user.role);
+
+      if (userRole === 'restaurant') {
         if (user.status === 'active') {
           clearPending();
           navigate(ROUTES.RESTAURANT_DASHBOARD, { replace: true });
@@ -74,15 +87,31 @@ export function AuthCallback() {
         return;
       }
 
-      if (user.role === 'admin') {
+      if (userRole === 'admin') {
         clearPending();
         navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
         return;
       }
 
-      if (pendingRole === 'restaurant') {
+      if (userRole === 'client') {
+        clearPending();
+        if (user.status !== 'active') {
+          navigate(ROUTES.CLIENT_ONBOARDING, { replace: true });
+          return;
+        }
+        navigate(ROUTES.HOME, { replace: true });
+        return;
+      }
+
+      if (normalizedPendingRole === 'restaurant') {
         clearPending();
         navigate(ROUTES.RESTAURANT_ONBOARDING, { replace: true });
+        return;
+      }
+
+      if (normalizedPendingRole === 'client') {
+        clearPending();
+        navigate(ROUTES.CLIENT_ONBOARDING, { replace: true });
         return;
       }
 

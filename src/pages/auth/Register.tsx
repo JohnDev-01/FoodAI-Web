@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
@@ -38,11 +38,15 @@ const MotionSectionCard = createMotionDiv('MotionSectionCard');
 const MotionForm = createMotionForm('MotionForm');
 
 export function Register() {
-  const { signUpRestaurant, loginWithGoogle, loading } = useAuth();
+  const { signUpRestaurant, signUpClient, loginWithGoogle, loading } = useAuth();
   const navigate = useNavigate();
   const [userType, setUserType] = useState<'client' | 'restaurant'>('restaurant');
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    setShowEmailForm(false);
+  }, [userType]);
 
   const {
     register,
@@ -60,52 +64,82 @@ export function Register() {
       key,
       value,
       label: value === 'client' ? 'Cliente' : 'Restaurante',
-      disabled: value !== 'restaurant',
     }));
   }, []);
 
-  const highlights = useMemo(
-    () => [
+  const highlights = useMemo(() => {
+    if (isRestaurant) {
+      return [
+        {
+          title: 'Identidad verificada',
+          description: 'Autenticación con Google y Supabase para asegurar tus datos y sesiones.',
+        },
+        {
+          title: 'Onboarding asistido',
+          description: 'Dirigimos cada paso: datos personales, restaurante y activación inmediata.',
+        },
+        {
+          title: 'Ecosistema inteligente',
+          description: 'Accede a métricas en vivo, pedidos automatizados y herramientas con IA.',
+        },
+      ];
+    }
+
+    return [
       {
-        title: 'Identidad verificada',
-        description: 'Autenticación con Google y Supabase para asegurar tus datos y sesiones.',
+        title: 'Reservas sincronizadas',
+        description: 'Centraliza todas tus reservas y recíbelas en tu correo y panel personal.',
       },
       {
-        title: 'Onboarding asistido',
-        description: 'Dirigimos cada paso: datos personales, restaurante y activación inmediata.',
+        title: 'Perfil inteligente',
+        description: 'Personaliza tus preferencias para recibir recomendaciones relevantes.',
       },
       {
-        title: 'Ecosistema inteligente',
-        description: 'Accede a métricas en vivo, pedidos automatizados y herramientas con IA.',
+        title: 'Historial accesible',
+        description: 'Consulta tus visitas anteriores y vuelve a tus lugares favoritos en segundos.',
       },
-    ],
-    []
-  );
+    ];
+  }, [isRestaurant]);
+
+  const title = isRestaurant
+    ? 'Crea tu cuenta de restaurante con una experiencia guiada'
+    : 'Regístrate como cliente y disfruta de FoodAI';
+
+  const subtitle = isRestaurant
+    ? 'Usa tu cuenta de Google para empezar en segundos o completa el formulario si prefieres correo. Te acompañamos paso a paso para activar tu panel inteligente.'
+    : 'Conéctate con Google o correo para guardar tus datos personales, reservas y recomendaciones personalizadas.';
+
+  const emailSubmitLabel = isRestaurant ? 'Crear cuenta de restaurante' : 'Crear cuenta de cliente';
+  const emailPlaceholder = isRestaurant ? 'tu@restaurante.com' : 'tu@email.com';
+  const footnoteText = isRestaurant
+    ? 'Al continuar aceptas nuestros términos y autorizas a FoodAI a sincronizar tus datos con Supabase para identificar tu restaurante dentro del ecosistema.'
+    : 'Al continuar autorizas a FoodAI a sincronizar tus datos con Supabase para personalizar tu experiencia como cliente.';
 
   const onSubmit = async (data: RegisterForm) => {
     try {
-      if (!isRestaurant) {
-        toast.error('Por ahora el alta está disponible solo para restaurantes.');
-        return;
-      }
-
-      const result = await signUpRestaurant({
-        email: data.email,
-        password: data.password,
-      });
+      const result = isRestaurant
+        ? await signUpRestaurant({
+            email: data.email,
+            password: data.password,
+          })
+        : await signUpClient({
+            email: data.email,
+            password: data.password,
+          });
 
       if (result.success) {
-        navigate(ROUTES.RESTAURANT_ONBOARDING);
+        navigate(isRestaurant ? ROUTES.RESTAURANT_ONBOARDING : ROUTES.CLIENT_ONBOARDING);
       }
     } catch (error) {
       console.error('Registration error:', error);
+      toast.error('No se pudo completar el registro');
     }
   };
 
   const handleGoogleSignup = async () => {
     try {
       setGoogleLoading(true);
-      await loginWithGoogle('restaurant');
+      await loginWithGoogle(isRestaurant ? 'restaurant' : 'client');
     } catch (error) {
       console.error('Google signup error:', error);
       toast.error('No se pudo iniciar la autenticación con Google');
@@ -166,11 +200,10 @@ export function Register() {
 
             <div className="space-y-4">
               <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-                Crea tu cuenta de restaurante con una experiencia guiada
+                {title}
               </h1>
               <p className="text-sm text-blue-100/75 sm:text-base">
-                Usa tu cuenta de Google para empezar en segundos o completa el formulario si prefieres correo. 
-                Te acompañamos paso a paso para activar tu panel inteligente.
+                {subtitle}
               </p>
             </div>
 
@@ -179,173 +212,164 @@ export function Register() {
                 Tipos de cuenta
               </p>
               <div className="flex flex-wrap gap-3">
-                {userTypeOptions.map(({ key, value, label, disabled }) => (
+                {userTypeOptions.map(({ key, value, label }) => (
                   <Button
                     key={key}
                     type="button"
                     variant={userType === value ? 'primary' : 'outline'}
                     size="sm"
-                    disabled={disabled}
-                    onClick={() => !disabled && setUserType(value)}
+                    onClick={() => setUserType(value)}
                     className={`rounded-full px-5 ${
                       userType === value
                         ? 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white border-0'
                         : 'border-white/20 bg-white/10 text-blue-100 hover:bg-white/20'
-                    } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    }`}
                   >
                     {label}
-                    {disabled && (
-                      <span className="ml-2 text-[10px] uppercase tracking-wider text-blue-100/70">
-                        Próximamente
-                      </span>
-                    )}
                   </Button>
                 ))}
               </div>
-              {!isRestaurant && (
-                <div className="rounded-2xl border border-blue-400/30 bg-blue-500/15 px-4 py-3 text-sm text-blue-100">
-                  Muy pronto habilitaremos el registro para clientes. Por ahora, enfocamos el alta en restaurantes.
-                </div>
-              )}
             </div>
 
-            {isRestaurant && (
-              <AnimatePresence mode="wait">
-                {showEmailForm ? (
-                  <MotionForm
-                    key="email-form"
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -16 }}
-                    transition={{ duration: 0.4, ease: 'easeOut' }}
-                    onSubmit={handleSubmit(onSubmit)}
-                    className="grid gap-5"
-                  >
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Input
-                        label="Nombre completo"
-                        placeholder="Tu nombre completo"
-                        {...register('name', {
-                          required: 'El nombre es requerido',
-                          minLength: {
-                            value: 2,
-                            message: 'El nombre debe tener al menos 2 caracteres',
-                          },
-                        })}
-                        error={errors.name?.message}
-                      />
-                      <Input
-                        label="Correo electrónico"
-                        type="email"
-                        placeholder="tu@restaurante.com"
-                        {...register('email', {
-                          required: 'El correo es requerido',
-                          pattern: {
-                            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                            message: 'Formato de correo inválido',
-                          },
-                        })}
-                        error={errors.email?.message}
-                      />
-                      <Input
-                        label="Teléfono (opcional)"
-                        type="tel"
-                        placeholder="+1 809 000 0000"
-                        {...register('phone')}
-                      />
-                      <Input
-                        label="Contraseña"
-                        type="password"
-                        placeholder="Mínimo 8 caracteres"
-                        {...register('password', {
-                          required: 'La contraseña es requerida',
-                          minLength: {
-                            value: 8,
-                            message: 'La contraseña debe tener al menos 8 caracteres',
-                          },
-                        })}
-                        error={errors.password?.message}
-                      />
-                      <Input
-                        label="Confirmar contraseña"
-                        type="password"
-                        placeholder="Repite tu contraseña"
-                        {...register('confirmPassword', {
-                          required: 'Confirma tu contraseña',
-                          validate: (value) =>
-                            value === password || 'Las contraseñas no coinciden',
-                        })}
-                        error={errors.confirmPassword?.message}
-                      />
-                    </div>
+            <AnimatePresence mode="wait">
+              {showEmailForm ? (
+                <MotionForm
+                  key="email-form"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  onSubmit={handleSubmit(onSubmit)}
+                  className="grid gap-5"
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Input
+                      label="Nombre completo"
+                      placeholder="Tu nombre completo"
+                      {...register('name', {
+                        required: 'El nombre es requerido',
+                        minLength: {
+                          value: 2,
+                          message: 'El nombre debe tener al menos 2 caracteres',
+                        },
+                      })}
+                      error={errors.name?.message}
+                    />
+                    <Input
+                      label="Correo electrónico"
+                      type="email"
+                      placeholder={emailPlaceholder}
+                      {...register('email', {
+                        required: 'El correo es requerido',
+                        pattern: {
+                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                          message: 'Formato de correo inválido',
+                        },
+                      })}
+                      error={errors.email?.message}
+                    />
+                    <Input
+                      label="Teléfono (opcional)"
+                      type="tel"
+                      placeholder="+1 809 000 0000"
+                      {...register('phone')}
+                    />
+                    <Input
+                      label="Contraseña"
+                      type="password"
+                      placeholder="Mínimo 8 caracteres"
+                      {...register('password', {
+                        required: 'La contraseña es requerida',
+                        minLength: {
+                          value: 8,
+                          message: 'La contraseña debe tener al menos 8 caracteres',
+                        },
+                      })}
+                      error={errors.password?.message}
+                    />
+                    <Input
+                      label="Confirmar contraseña"
+                      type="password"
+                      placeholder="Repite tu contraseña"
+                      {...register('confirmPassword', {
+                        required: 'Confirma tu contraseña',
+                        validate: (value) =>
+                          value === password || 'Las contraseñas no coinciden',
+                      })}
+                      error={errors.confirmPassword?.message}
+                    />
+                  </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <Button
-                        type="submit"
-                        className="w-full sm:w-auto"
-                        loading={loading}
-                        disabled={loading}
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <Button
+                      type="submit"
+                      className="w-full sm:w-auto"
+                      loading={loading}
+                      disabled={loading}
+                    >
+                      {emailSubmitLabel}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-sm text-blue-200 hover:text-white sm:w-auto"
+                      onClick={() => setShowEmailForm(false)}
+                    >
+                      Prefiero continuar con Google
+                    </Button>
+                  </div>
+                </MotionForm>
+              ) : (
+                <MotionSectionCard
+                  key="google-flow"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  className="space-y-6"
+                >
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {highlights.map((item) => (
+                      <div
+                        key={item.title}
+                        className="rounded-2xl border border-white/10 bg-white/12 px-4 py-5"
                       >
-                        Crear cuenta de restaurante
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-sm text-blue-200 hover:text-white sm:w-auto"
-                        onClick={() => setShowEmailForm(false)}
-                      >
-                        Prefiero continuar con Google
-                      </Button>
-                    </div>
-                  </MotionForm>
-                ) : (
-                  <MotionSectionCard
-                    key="google-flow"
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -16 }}
-                    transition={{ duration: 0.4, ease: 'easeOut' }}
-                    className="space-y-6"
-                  >
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      {highlights.map((item) => (
-                        <div
-                          key={item.title}
-                          className="rounded-2xl border border-white/10 bg-white/12 px-4 py-5"
-                        >
-                          <ShieldCheck className="mb-3 h-5 w-5 text-blue-100" />
-                          <p className="text-sm font-semibold text-white">{item.title}</p>
-                          <p className="mt-1 text-xs text-blue-100/70">{item.description}</p>
-                        </div>
-                      ))}
-                    </div>
+                        <ShieldCheck className="mb-3 h-5 w-5 text-blue-100" />
+                        <p className="text-sm font-semibold text-white">{item.title}</p>
+                        <p className="mt-1 text-xs text-blue-100/70">{item.description}</p>
+                      </div>
+                    ))}
+                  </div>
 
-                    <div className="space-y-3">
-                      <Button
-                        onClick={handleGoogleSignup}
-                        className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white text-gray-900 transition-all hover:shadow-[0_0_40px_-12px_rgba(59,130,246,0.7)] dark:bg-gray-100 dark:text-gray-900"
-                        disabled={googleLoading}
-                        loading={googleLoading}
-                      >
-                        <span className="relative z-10 flex items-center gap-3 text-base font-medium">
-                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-green-500 to-red-500 text-xs font-bold text-white">
-                            G
-                          </span>
-                          {googleLoading ? 'Conectando...' : 'Continuar con Google'}
+                  <div className="space-y-3">
+                    <Button
+                      onClick={handleGoogleSignup}
+                      className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white text-gray-900 transition-all hover:shadow-[0_0_40px_-12px_rgba(59,130,246,0.7)] dark:bg-gray-100 dark:text-gray-900"
+                      disabled={googleLoading}
+                      loading={googleLoading}
+                    >
+                      <span className="relative z-10 flex items-center gap-3 text-base font-medium">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-green-500 to-red-500 text-xs font-bold text-white">
+                          G
                         </span>
-                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                      </Button>
-                     
-                    </div>
+                        {googleLoading ? 'Conectando...' : 'Continuar con Google'}
+                      </span>
+                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full text-sm text-blue-200 hover:text-white"
+                      onClick={() => setShowEmailForm(true)}
+                    >
+                      Prefiero registrarme con correo
+                    </Button>
+                  </div>
 
-                    <p className="text-xs text-blue-100/60">
-                      Al continuar aceptas nuestros términos y autorizas a FoodAI a sincronizar tus datos con Supabase
-                      para identificar tu restaurante dentro del ecosistema.
-                    </p>
-                  </MotionSectionCard>
-                )}
-              </AnimatePresence>
-            )}
+                  <p className="text-xs text-blue-100/60">{footnoteText}</p>
+                </MotionSectionCard>
+              )}
+            </AnimatePresence>
 
             <div className="flex flex-col gap-3 pt-2 text-sm text-blue-100/70 sm:flex-row sm:items-center sm:justify-between">
               <span>

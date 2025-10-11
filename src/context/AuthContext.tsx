@@ -11,6 +11,8 @@ import { toast } from 'react-hot-toast';
 import type {
   AuthActionResult,
   AuthContextType,
+  ClientProfilePayload,
+  ClientSignupPayload,
   RestaurantProfilePayload,
   RestaurantSignupPayload,
   User,
@@ -27,6 +29,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 interface AuthProviderProps {
   children: ReactNode;
 }
+
+const normalizeRole = (role: string | null | undefined): UserRole | null => {
+  if (!role) {
+    return null;
+  }
+
+  const normalized = role.toLowerCase();
+
+  if (normalized === 'user') {
+    return 'client';
+  }
+
+  if (normalized === 'client' || normalized === 'restaurant' || normalized === 'admin') {
+    return normalized as UserRole;
+  }
+
+  return null;
+};
 
 const buildUserFromSources = (
   profile: UserProfile | null,
@@ -57,7 +77,8 @@ const buildUserFromSources = (
   const fullNameCandidate = `${derivedFirstName} ${derivedLastName}`.trim();
   const fullName = fullNameCandidate.length > 0 ? fullNameCandidate : metadataFullName || email;
 
-  const role = profile?.role ?? (metadata.role as UserRole | undefined) ?? null;
+  const rawRole = profile?.role ?? (metadata.role as string | undefined) ?? null;
+  const role = normalizeRole(rawRole);
   const status = profile?.status ?? 'pending';
 
   return {
@@ -221,7 +242,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const needsProfile = !profile;
 
         if (needsProfile) {
-          localStorage.setItem(STORAGE_KEYS.SUPABASE_POST_AUTH_ROUTE, ROUTES.RESTAURANT_ONBOARDING);
+          const onboardingRole = mappedUser?.role === 'restaurant' ? 'restaurant' : 'client';
+          localStorage.setItem(
+            STORAGE_KEYS.SUPABASE_POST_AUTH_ROUTE,
+            onboardingRole === 'restaurant' ? ROUTES.RESTAURANT_ONBOARDING : ROUTES.CLIENT_ONBOARDING
+          );
+          localStorage.setItem(STORAGE_KEYS.SUPABASE_PENDING_ROLE, onboardingRole);
         }
 
         toast.success('Inicio de sesión exitoso');
@@ -248,9 +274,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (role) {
           localStorage.setItem(STORAGE_KEYS.SUPABASE_PENDING_ROLE, role);
         }
+        const postAuthRoute =
+          role === 'restaurant'
+            ? ROUTES.RESTAURANT_ONBOARDING
+            : role === 'client'
+              ? ROUTES.CLIENT_ONBOARDING
+              : ROUTES.HOME;
         localStorage.setItem(
           STORAGE_KEYS.SUPABASE_POST_AUTH_ROUTE,
-          role === 'restaurant' ? ROUTES.RESTAURANT_ONBOARDING : ROUTES.HOME
+          postAuthRoute
         );
 
         const { error } = await supabaseClient.auth.signInWithOAuth({
@@ -273,6 +305,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     },
     []
+  );
+
+  const signUpClient = useCallback<AuthContextType['signUpClient']>(
+    async ({ email, password }) => {
+      setLoading(true);
+      try {
+        localStorage.setItem(STORAGE_KEYS.SUPABASE_PENDING_ROLE, 'client');
+        localStorage.setItem(STORAGE_KEYS.SUPABASE_POST_AUTH_ROUTE, ROUTES.CLIENT_ONBOARDING);
+
+        const { data, error } = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { role: 'client' },
+            emailRedirectTo: `${window.location.origin}${ROUTES.CLIENT_ONBOARDING}`,
+          },
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        const authUser = data.user ?? null;
+        await handleSessionChange(authUser);
+
+        toast.success('Cuenta de cliente creada. Completa tu perfil para continuar.');
+
+        return {
+          success: true,
+          user: buildUserFromSources(null, authUser),
+          needsProfile: true,
+        };
+      } catch (error) {
+        const message = (error as Error).message ?? 'Error desconocido';
+        toast.error('No se pudo crear la cuenta de cliente');
+        return { success: false, error: message };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleSessionChange]
   );
 
   const signUpRestaurant = useCallback<AuthContextType['signUpRestaurant']>(
@@ -316,10 +389,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [handleSessionChange]
   );
 
-  const completeRestaurantProfile = useCallback<
-    AuthContextType['completeRestaurantProfile']
-  >(
-    async ({ firstName, lastName, profileImage }) => {
+  const completeProfile = useCallback(
+    async (
+      { firstName, lastName, profileImage }: ClientProfilePayload,
+      role: UserRole,
+      options: { successMessage?: string } = {}
+    ): Promise<AuthActionResult> => {
       if (!sessionUser || !sessionUser.email) {
         return { success: false, error: 'No hay sesión activa' };
       }
@@ -332,14 +407,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
           email: sessionUser.email,
           firstName,
           lastName,
-          role: 'restaurant',
+          role,
           profileImage: profileImage ?? null,
           status: 'active',
         });
 
         await handleSessionChange(sessionUser);
+        localStorage.removeItem(STORAGE_KEYS.SUPABASE_PENDING_ROLE);
+        localStorage.removeItem(STORAGE_KEYS.SUPABASE_POST_AUTH_ROUTE);
 
-        toast.success('Perfil de restaurante completado');
+        toast.success(options.successMessage ?? 'Perfil actualizado');
 
         return {
           success: true,
@@ -357,6 +434,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [handleSessionChange, sessionUser]
   );
 
+  const completeClientProfile = useCallback<AuthContextType['completeClientProfile']>(
+    async (payload) =>
+      completeProfile(payload, 'client', {
+        successMessage: 'Perfil de cliente completado',
+      }),
+    [completeProfile]
+  );
+
+  const completeRestaurantProfile = useCallback<
+    AuthContextType['completeRestaurantProfile']
+  >(
+    async (payload) =>
+      completeProfile(payload, 'restaurant', {
+        successMessage: 'Perfil de restaurante completado',
+      }),
+    [completeProfile]
+  );
+
   const updateProfile = useCallback<AuthContextType['updateProfile']>(
     async (data) => {
       if (!sessionUser || !sessionUser.email) {
@@ -368,13 +463,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         lastName: data.lastName ?? user?.lastName ?? '',
         profileImage: data.profileImage ?? user?.profileImage ?? null,
       };
+      const targetRole =
+        normalizeRole((data.role ?? user?.role ?? 'client') as string) ?? 'client';
 
       await upsertUserProfile({
         authId: sessionUser.id,
         email: data.email ?? sessionUser.email,
         firstName: merged.firstName,
         lastName: merged.lastName,
-        role: (data.role ?? user?.role ?? 'client') as UserRole,
+        role: targetRole,
         profileImage: merged.profileImage ?? null,
         status: data.status ?? user?.status ?? 'pending',
       });
@@ -401,7 +498,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       initialising,
       login,
       loginWithGoogle,
+      signUpClient,
       signUpRestaurant,
+      completeClientProfile,
       completeRestaurantProfile,
       updateProfile,
       refreshProfile,
@@ -411,6 +510,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAdmin: () => user?.role === 'admin',
     }),
     [
+      completeClientProfile,
       completeRestaurantProfile,
       initialising,
       login,
@@ -418,6 +518,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout,
       refreshProfile,
       sessionUser,
+      signUpClient,
       signUpRestaurant,
       updateProfile,
       user,

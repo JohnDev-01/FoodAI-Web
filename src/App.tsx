@@ -18,6 +18,7 @@ import { About } from './pages/About';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { AuthCallback } from './pages/auth/AuthCallback';
+import { ClientOnboarding } from './pages/client/Onboarding';
 
 // Dashboard Restaurante
 import { RestaurantDashboard } from './pages/restaurant/Dashboard';
@@ -65,6 +66,16 @@ function App() {
                     <Route path="register" element={<Register />} />
                     <Route path="callback" element={<AuthCallback />} />
                   </Route>
+
+                  {/* Flujo de onboarding cliente */}
+                  <Route
+                    path="/client/onboarding"
+                    element={
+                      <ProtectedRoute requireProfile={false}>
+                        <ClientOnboarding />
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Flujo de onboarding restaurante */}
                   <Route

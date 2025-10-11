@@ -122,6 +122,11 @@ export interface Reservation {
   updatedAt: string;
 }
 
+export interface ReservationWithRestaurant extends Reservation {
+  restaurantName?: string | null;
+  restaurantLogo?: string | null;
+}
+
 export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
 // Cart types
@@ -183,11 +188,18 @@ export interface RestaurantSignupPayload {
   password: string;
 }
 
+export interface ClientSignupPayload {
+  email: string;
+  password: string;
+}
+
 export interface RestaurantProfilePayload {
   firstName: string;
   lastName: string;
   profileImage?: string | null;
 }
+
+export type ClientProfilePayload = RestaurantProfilePayload;
 
 export interface AuthActionResult {
   success: boolean;
@@ -215,7 +227,9 @@ export interface AuthContextType {
   initialising: boolean;
   login: (email: string, password: string) => Promise<AuthActionResult>;
   loginWithGoogle: (role?: UserRole) => Promise<void>;
+  signUpClient: (payload: ClientSignupPayload) => Promise<AuthActionResult>;
   signUpRestaurant: (payload: RestaurantSignupPayload) => Promise<AuthActionResult>;
+  completeClientProfile: (payload: ClientProfilePayload) => Promise<AuthActionResult>;
   completeRestaurantProfile: (payload: RestaurantProfilePayload) => Promise<AuthActionResult>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   refreshProfile: () => Promise<void>;
