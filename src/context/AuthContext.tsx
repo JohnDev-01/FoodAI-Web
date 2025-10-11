@@ -101,6 +101,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [initialising, setInitialising] = useState<boolean>(true);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const { hash, search, pathname } = window.location;
+    const isOnCallback = pathname.startsWith('/auth/callback');
+    // When Supabase redirects to the root with auth params in the hash, route it to our callback page.
+    const hashHasAuthParams =
+      hash && /access_token=|refresh_token=|type=|code=|error=/.test(hash);
+    const searchHasAuthCode = search && /code=/.test(search);
+
+    if (!isOnCallback && (hashHasAuthParams || searchHasAuthCode)) {
+      const nextUrl = `/auth/callback${searchHasAuthCode ? search : hash}`;
+      window.history.replaceState({}, '', nextUrl);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  }, []);
+
   const handleSessionChange = useCallback(
     async (authUser: SupabaseAuthUser | null) => {
       setSessionUser(authUser);

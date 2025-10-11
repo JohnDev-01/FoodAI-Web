@@ -235,9 +235,17 @@ export function RestaurantDashboard() {
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-semibold">
-                  {user?.firstName?.[0] ?? user?.name?.[0] ?? 'F'}
-                </div>
+                {user?.profileImage ? (
+                  <img
+                    src={user.profileImage}
+                    alt={`Foto de ${user?.name ?? 'usuario'}`}
+                    className="h-12 w-12 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                  />
+                ) : (
+                  <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-semibold">
+                    {user?.firstName?.[0] ?? user?.name?.[0] ?? 'F'}
+                  </div>
+                )}
                 <div>
                   <p className="font-semibold text-gray-900 dark:text-white">{user?.name}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>

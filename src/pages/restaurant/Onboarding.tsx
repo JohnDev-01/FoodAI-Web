@@ -10,8 +10,12 @@ import { Input } from '../../components/ui/Input';
 import { ROUTES, STORAGE_KEYS } from '../../constants';
 import type { Restaurant, RestaurantProfilePayload } from '../../types';
 import { getRestaurantByOwnerId, upsertRestaurant } from '../../services/restaurantService';
+import { uploadProfileImage, uploadRestaurantLogo } from '../../services/storageService';
 
-type PersonalFormValues = RestaurantProfilePayload & { email: string };
+type PersonalFormValues = RestaurantProfilePayload & {
+  email: string;
+  profileImageFile?: FileList;
+};
 
 type CompanyFormValues = {
   restaurantName: string;
@@ -25,6 +29,7 @@ type CompanyFormValues = {
   openTime?: string;
   closeTime?: string;
   logoUrl?: string;
+  logoFile?: FileList;
 };
 
 const MotionContainer = motion.div as any;
@@ -60,9 +65,19 @@ export function RestaurantOnboarding() {
   const inferredProfileImage =
     user?.profileImage ?? (metadata.avatar_url as string | undefined) ?? undefined;
 
+  const [previewImage, setPreviewImage] = useState<string | null>(
+    inferredProfileImage ?? null
+  );
+  const [fileInputKey, setFileInputKey] = useState<number>(0);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoFileInputKey, setLogoFileInputKey] = useState<number>(0);
+
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
+    resetField,
     formState: { errors },
     reset,
   } = useForm<PersonalFormValues>({
@@ -73,10 +88,36 @@ export function RestaurantOnboarding() {
       profileImage: inferredProfileImage,
     },
   });
+  const watchedProfileImageFile = watch('profileImageFile');
+
+  useEffect(() => {
+    setPreviewImage(inferredProfileImage ?? null);
+  }, [inferredProfileImage]);
+
+  useEffect(() => {
+    if (!watchedProfileImageFile || watchedProfileImageFile.length === 0) {
+      return;
+    }
+
+    const file = watchedProfileImageFile[0];
+    if (!file) {
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewImage(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [watchedProfileImageFile]);
 
   const {
     register: registerCompany,
     handleSubmit: handleSubmitCompany,
+    watch: watchCompany,
+    setValue: setCompanyValue,
+    resetField: resetCompanyField,
     formState: { errors: companyErrors },
     reset: resetCompany,
   } = useForm<CompanyFormValues>({
@@ -94,6 +135,38 @@ export function RestaurantOnboarding() {
       logoUrl: '',
     },
   });
+  const watchedLogoFile = watchCompany('logoFile');
+  const watchedLogoUrl = watchCompany('logoUrl');
+
+  useEffect(() => {
+    if (!watchedLogoFile || watchedLogoFile.length === 0) {
+      return;
+    }
+
+    const logo = watchedLogoFile[0];
+    if (!logo) {
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(logo);
+    setLogoPreview(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [watchedLogoFile]);
+
+  useEffect(() => {
+    if (watchedLogoFile && watchedLogoFile.length > 0) {
+      return;
+    }
+
+    if (watchedLogoUrl && watchedLogoUrl.trim().length > 0) {
+      setLogoPreview(watchedLogoUrl.trim());
+    } else {
+      setLogoPreview(null);
+    }
+  }, [watchedLogoFile, watchedLogoUrl]);
 
   useEffect(() => {
     if (sessionUser) {
@@ -109,6 +182,11 @@ export function RestaurantOnboarding() {
         restaurantEmail: sessionUser.email ?? '',
         country: prev.country || defaultCountry,
       }));
+
+      setPreviewImage(inferredProfileImage ?? null);
+      setFileInputKey((prev) => prev + 1);
+      setLogoPreview(null);
+      setLogoFileInputKey((prev) => prev + 1);
     }
   }, [reset, resetCompany, sessionUser, inferredFirstName, inferredLastName, inferredProfileImage]);
 
@@ -168,16 +246,65 @@ export function RestaurantOnboarding() {
       closeTime: restaurant.closeTime ?? '',
       logoUrl: restaurant.logoUrl ?? '',
     });
+    resetCompanyField('logoFile');
+    setLogoPreview(restaurant.logoUrl ?? null);
+    setLogoFileInputKey((prev) => prev + 1);
+  };
+
+  const handleRemoveImage = () => {
+    resetField('profileImageFile');
+    setValue('profileImage', null, { shouldDirty: true });
+    setPreviewImage(null);
+    setFileInputKey((prev) => prev + 1);
+  };
+
+  const handleRemoveLogo = () => {
+    resetCompanyField('logoFile');
+    setCompanyValue('logoUrl', '', { shouldDirty: true });
+    setLogoPreview(null);
+    setLogoFileInputKey((prev) => prev + 1);
   };
 
   const handlePersonalSubmit = async (values: PersonalFormValues) => {
+    if (!sessionUser?.id) {
+      toast.error('No pudimos validar tu sesión. Vuelve a iniciar sesión.');
+      return;
+    }
+
+    let profileImageUrl = values.profileImage ?? null;
+    const fileList = values.profileImageFile;
+    const file = fileList && fileList.length > 0 ? fileList[0] : undefined;
+
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Selecciona un archivo de imagen válido.');
+        resetField('profileImageFile');
+        setFileInputKey((prev) => prev + 1);
+        return;
+      }
+
+      try {
+        profileImageUrl = await uploadProfileImage(file, sessionUser.id);
+      } catch (error) {
+        console.error('Error subiendo la imagen de perfil', error);
+        toast.error('No pudimos subir la imagen. Intenta nuevamente.');
+        resetField('profileImageFile');
+        setFileInputKey((prev) => prev + 1);
+        return;
+      }
+    }
+
     const result = await completeRestaurantProfile({
-      firstName: values.firstName,
-      lastName: values.lastName,
-      profileImage: values.profileImage,
+      firstName: values.firstName.trim(),
+      lastName: values.lastName.trim(),
+      profileImage: profileImageUrl,
     });
 
     if (result.success) {
+      setValue('profileImage', profileImageUrl, { shouldDirty: false });
+      resetField('profileImageFile');
+      setFileInputKey((prev) => prev + 1);
+      setPreviewImage(profileImageUrl ?? null);
       toast.success('Perfil personal actualizado. Completa los datos de tu restaurante.');
       setStep(2);
     }
@@ -191,6 +318,34 @@ export function RestaurantOnboarding() {
 
     setCompanySubmitting(true);
     try {
+      const normalizedLogoUrl =
+        typeof values.logoUrl === 'string' ? values.logoUrl.trim() : '';
+      let logoUrlToSave: string | null = normalizedLogoUrl || null;
+
+      const logoFileList = values.logoFile;
+      const logoFile = logoFileList && logoFileList.length > 0 ? logoFileList[0] : undefined;
+
+      if (logoFile) {
+        if (!logoFile.type.startsWith('image/')) {
+          toast.error('Selecciona un archivo de imagen válido para el logo.');
+          resetCompanyField('logoFile');
+          setLogoFileInputKey((prev) => prev + 1);
+          setCompanySubmitting(false);
+          return;
+        }
+
+        try {
+          logoUrlToSave = await uploadRestaurantLogo(logoFile, user.id);
+        } catch (error) {
+          console.error('Error subiendo el logo del restaurante', error);
+          toast.error('No pudimos subir el logo. Intenta nuevamente.');
+          resetCompanyField('logoFile');
+          setLogoFileInputKey((prev) => prev + 1);
+          setCompanySubmitting(false);
+          return;
+        }
+      }
+
       await upsertRestaurant({
         ownerId: user.id,
         name: values.restaurantName,
@@ -203,9 +358,14 @@ export function RestaurantOnboarding() {
         cuisineType: values.cuisineType?.trim() || null,
         openTime: values.openTime || null,
         closeTime: values.closeTime || null,
-        logoUrl: values.logoUrl?.trim() || null,
+        logoUrl: logoUrlToSave,
         status: 'active',
       });
+
+      setCompanyValue('logoUrl', logoUrlToSave ?? '', { shouldDirty: false });
+      resetCompanyField('logoFile');
+      setLogoFileInputKey((prev) => prev + 1);
+      setLogoPreview(logoUrlToSave ?? null);
 
       localStorage.removeItem(STORAGE_KEYS.SUPABASE_PENDING_ROLE);
       localStorage.removeItem(STORAGE_KEYS.SUPABASE_POST_AUTH_ROUTE);
@@ -324,16 +484,43 @@ export function RestaurantOnboarding() {
                   error={errors.lastName?.message}
                 />
 
+                <input type="hidden" {...register('profileImage')} />
+
                 <div className="md:col-span-2">
                   <Input
-                    label="Imagen de perfil (URL)"
-                    placeholder="https://tu-imagen.com/avatar.png"
-                    {...register('profileImage')}
-                    error={errors.profileImage?.message}
+                    key={fileInputKey}
+                    label="Imagen de perfil (opcional)"
+                    type="file"
+                    accept="image/*"
+                    {...register('profileImageFile')}
                   />
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Esta imagen se mostrará en tu panel y comunicaciones con clientes.
+                    La imagen se cargará automáticamente a tu cuenta y se mostrará en tu panel cuando esté disponible.
                   </p>
+                  {previewImage && (
+                    <div className="mt-4 flex items-center gap-4">
+                      <div className="h-16 w-16 rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                        <img
+                          src={previewImage}
+                          alt="Vista previa de la imagen de perfil"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          Vista previa actual
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveImage}
+                        >
+                          Quitar imagen
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="md:col-span-2 mt-6 flex justify-end">
@@ -444,16 +631,55 @@ export function RestaurantOnboarding() {
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <Input
-                      label="Logo o imagen destacada (URL)"
-                      placeholder="https://storage.supabase.co/.../logo.png"
-                      {...registerCompany('logoUrl')}
-                      error={companyErrors.logoUrl?.message}
-                    />
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Recomendamos usar imágenes cuadradas (512x512) almacenadas en Supabase Storage.
-                    </p>
+                  <div className="md:col-span-2 space-y-4">
+                    <div>
+                      <Input
+                        key={logoFileInputKey}
+                        label="Logo o imagen destacada (opcional)"
+                        type="file"
+                        accept="image/*"
+                        {...registerCompany('logoFile')}
+                      />
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        Sube un logo cuadrado (ideal 512x512). Lo almacenaremos automáticamente en Supabase.
+                      </p>
+                      {logoPreview && (
+                        <div className="mt-4 flex items-center gap-4">
+                          <div className="h-20 w-20 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                            <img
+                              src={logoPreview}
+                              alt="Vista previa del logo"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
+                              Vista previa actual
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleRemoveLogo}
+                            >
+                              Quitar imagen
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <Input
+                        label="Logo o imagen destacada (URL)"
+                        placeholder="https://storage.supabase.co/.../logo.png"
+                        {...registerCompany('logoUrl')}
+                        error={companyErrors.logoUrl?.message}
+                      />
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        También puedes pegar manualmente una URL pública si ya cuentas con el logo hospedado.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
