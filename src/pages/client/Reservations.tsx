@@ -13,10 +13,10 @@ import { listActiveRestaurants } from '../../services/restaurantService';
 
 type ReservationFormValues = {
   restaurantId: string;
-  date: string;
-  time: string;
-  partySize: number;
-  notes?: string;
+  reservationDate: string;
+  reservationTime: string;
+  guestsCount: number;
+  specialRequest?: string;
 };
 
 const reservationStatusLabels: Record<ReservationStatus, string> = {
@@ -57,10 +57,10 @@ export function Reservations() {
   } = useForm<ReservationFormValues>({
     defaultValues: {
       restaurantId: '',
-      date: todayIso(),
-      time: '',
-      partySize: 2,
-      notes: '',
+      reservationDate: todayIso(),
+      reservationTime: '',
+      guestsCount: 2,
+      specialRequest: '',
     },
   });
 
@@ -129,7 +129,14 @@ export function Reservations() {
     return reservations
       .filter((reservation) => reservation.status !== 'cancelled')
       .filter((reservation) => {
-        const iso = reservation.time?.length === 5 ? `${reservation.date}T${reservation.time}:00` : `${reservation.date}T${reservation.time}`;
+        const time = reservation.reservationTime;
+        const date = reservation.reservationDate;
+        if (!date) {
+          return true;
+        }
+
+        const normalizedTime = time?.length === 5 ? `${time}:00` : time ?? '';
+        const iso = normalizedTime ? `${date}T${normalizedTime}` : date;
         const parsed = new Date(iso);
         if (Number.isNaN(parsed.getTime())) {
           return true;
@@ -149,19 +156,19 @@ export function Reservations() {
       setFormSubmitting(true);
       const created = await createReservation(user.id, {
         restaurantId: values.restaurantId,
-        date: values.date,
-        time: values.time,
-        partySize: Number(values.partySize),
-        notes: values.notes?.trim() || undefined,
+        reservationDate: values.reservationDate,
+        reservationTime: values.reservationTime,
+        guestsCount: Number(values.guestsCount),
+        specialRequest: values.specialRequest?.trim() || undefined,
       });
       setReservations((prev) => [created, ...prev]);
       toast.success('Reserva creada con éxito');
       reset({
         restaurantId: values.restaurantId,
-        date: values.date,
-        time: '',
-        partySize: values.partySize,
-        notes: '',
+        reservationDate: values.reservationDate,
+        reservationTime: '',
+        guestsCount: values.guestsCount,
+        specialRequest: '',
       });
     } catch (error) {
       console.error('Error al crear la reserva:', error);
@@ -184,13 +191,14 @@ export function Reservations() {
     }
   };
 
-  const formatReservationSchedule = (date: string, time: string) => {
-    if (!date) {
-      return { dateLabel: 'Sin fecha', timeLabel: time ?? '' };
+  const formatReservationSchedule = (reservationDate: string, reservationTime: string) => {
+    if (!reservationDate) {
+      return { dateLabel: 'Sin fecha', timeLabel: reservationTime ?? '' };
     }
 
-    const normalizedTime = time?.length === 5 ? `${time}:00` : time ?? '';
-    const candidate = normalizedTime ? `${date}T${normalizedTime}` : date;
+    const normalizedTime =
+      reservationTime?.length === 5 ? `${reservationTime}:00` : reservationTime ?? '';
+    const candidate = normalizedTime ? `${reservationDate}T${normalizedTime}` : reservationDate;
     const parsed = new Date(candidate);
 
     if (!Number.isNaN(parsed.getTime())) {
@@ -209,7 +217,7 @@ export function Reservations() {
       };
     }
 
-    return { dateLabel: date, timeLabel: time ?? '' };
+    return { dateLabel: reservationDate, timeLabel: reservationTime ?? '' };
   };
 
   if (initialising) {
@@ -254,7 +262,10 @@ export function Reservations() {
             {upcomingReservations.length > 0 && (
               <div className="grid gap-4 sm:grid-cols-3">
                 {upcomingReservations.map((reservation) => {
-                  const schedule = formatReservationSchedule(reservation.date, reservation.time);
+                  const schedule = formatReservationSchedule(
+                    reservation.reservationDate,
+                    reservation.reservationTime
+                  );
                   return (
                     <div
                       key={reservation.id}
@@ -269,7 +280,7 @@ export function Reservations() {
                       </p>
                       <p className="mt-2 flex items-center gap-2 text-xs text-blue-100/60">
                         <Users className="h-4 w-4" />
-                        {reservation.partySize} personas
+                        {reservation.guestsCount} personas
                       </p>
                     </div>
                   );
@@ -328,14 +339,14 @@ export function Reservations() {
                     label="Fecha"
                     type="date"
                     min={todayIso()}
-                    {...register('date', { required: 'Selecciona una fecha' })}
-                    error={errors.date?.message}
+                    {...register('reservationDate', { required: 'Selecciona una fecha' })}
+                    error={errors.reservationDate?.message}
                   />
                   <Input
                     label="Hora"
                     type="time"
-                    {...register('time', { required: 'Selecciona una hora' })}
-                    error={errors.time?.message}
+                    {...register('reservationTime', { required: 'Selecciona una hora' })}
+                    error={errors.reservationTime?.message}
                   />
                 </div>
 
@@ -345,23 +356,23 @@ export function Reservations() {
                     type="number"
                     min={1}
                     max={12}
-                    {...register('partySize', {
+                    {...register('guestsCount', {
                       required: 'Indica la cantidad de personas',
                       valueAsNumber: true,
                       min: { value: 1, message: 'Debe ser al menos 1 persona' },
                       max: { value: 12, message: 'Máximo 12 personas por reserva' },
                     })}
-                    error={errors.partySize?.message}
+                    error={errors.guestsCount?.message}
                   />
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Notas especiales (opcional)
+                      Solicitud especial (opcional)
                     </label>
                     <textarea
                       rows={3}
                       className="w-full rounded-2xl border border-gray-200 bg-white/90 px-4 py-3 text-sm text-gray-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
                       placeholder="¿Celebración especial o preferencia de mesa?"
-                      {...register('notes')}
+                      {...register('specialRequest')}
                     />
                   </div>
                 </div>
@@ -407,8 +418,8 @@ export function Reservations() {
                 <div className="space-y-4">
                   {reservations.map((reservation) => {
                     const { dateLabel, timeLabel } = formatReservationSchedule(
-                      reservation.date,
-                      reservation.time
+                      reservation.reservationDate,
+                      reservation.reservationTime
                     );
                     const statusLabel = reservationStatusLabels[reservation.status];
                     const statusClass =
@@ -431,11 +442,11 @@ export function Reservations() {
                           </p>
                           <p className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-blue-200/60">
                             <Users className="h-4 w-4" />
-                            {reservation.partySize} personas
+                            {reservation.guestsCount} personas
                           </p>
-                          {reservation.notes && (
+                          {reservation.specialRequest && (
                             <p className="mt-2 rounded-xl bg-white/10 px-4 py-2 text-xs text-blue-100/70">
-                              “{reservation.notes}”
+                              “{reservation.specialRequest}”
                             </p>
                           )}
                         </div>
@@ -476,4 +487,3 @@ export function Reservations() {
     </div>
   );
 }
-

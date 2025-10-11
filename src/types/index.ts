@@ -113,11 +113,11 @@ export interface Reservation {
   id: string;
   userId: string;
   restaurantId: string;
-  date: string;
-  time: string;
-  partySize: number;
+  reservationDate: string;
+  reservationTime: string;
+  guestsCount: number;
   status: ReservationStatus;
-  notes?: string;
+  specialRequest?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -131,10 +131,10 @@ export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'complet
 
 export interface CreateReservationPayload {
   restaurantId: string;
-  date: string;
-  time: string;
-  partySize: number;
-  notes?: string;
+  reservationDate: string;
+  reservationTime: string;
+  guestsCount: number;
+  specialRequest?: string;
 }
 
 // Cart types

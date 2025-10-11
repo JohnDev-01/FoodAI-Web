@@ -82,19 +82,19 @@ export function Home() {
     };
   }, [user?.id, user?.role]);
 
-  const formatReservationSchedule = (date: string, time: string) => {
-    if (!date) {
+  const formatReservationSchedule = (reservationDate: string, reservationTime: string) => {
+    if (!reservationDate) {
       return {
         dateLabel: 'Sin fecha',
-        timeLabel: time ?? '',
+        timeLabel: reservationTime ?? '',
       };
     }
 
     const sanitizedTime =
-      time && time.length === 5
-        ? `${time}:00`
-        : time ?? '';
-    const isoCandidate = sanitizedTime ? `${date}T${sanitizedTime}` : date;
+      reservationTime && reservationTime.length === 5
+        ? `${reservationTime}:00`
+        : reservationTime ?? '';
+    const isoCandidate = sanitizedTime ? `${reservationDate}T${sanitizedTime}` : reservationDate;
     const parsed = new Date(isoCandidate);
 
     if (!Number.isNaN(parsed.getTime())) {
@@ -114,8 +114,8 @@ export function Home() {
     }
 
     return {
-      dateLabel: date,
-      timeLabel: time ?? '',
+      dateLabel: reservationDate,
+      timeLabel: reservationTime ?? '',
     };
   };
 
@@ -296,8 +296,8 @@ export function Home() {
                       <div className="grid gap-4">
                         {reservations.map((reservation) => {
                           const { dateLabel, timeLabel } = formatReservationSchedule(
-                            reservation.date,
-                            reservation.time
+                            reservation.reservationDate,
+                            reservation.reservationTime
                           );
                           const restaurantName =
                             reservation.restaurantName ??
@@ -337,7 +337,7 @@ export function Home() {
                                     {restaurantName}
                                   </p>
                                   <p className="text-sm text-gray-500 dark:text-gray-300">
-                                    Mesa para {reservation.partySize}
+                                    Mesa para {reservation.guestsCount}
                                     {timeLabel ? ` • ${timeLabel}` : ''}
                                   </p>
                                 </div>
@@ -362,9 +362,9 @@ export function Home() {
                                 </p>
                               </div>
 
-                              {reservation.notes && (
+                              {reservation.specialRequest && (
                                 <p className="mt-3 text-sm italic text-gray-500 dark:text-gray-400">
-                                  “{reservation.notes}”
+                                  “{reservation.specialRequest}”
                                 </p>
                               )}
                             </div>

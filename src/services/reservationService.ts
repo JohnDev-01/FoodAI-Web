@@ -9,11 +9,11 @@ interface ReservationDbRow {
   id: string;
   user_id: string;
   restaurant_id: string;
-  date: string;
-  time: string;
-  party_size: number;
+  reservation_date: string;
+  reservation_time: string;
+  guests_count: number;
   status: ReservationStatus;
-  notes: string | null;
+  special_request: string | null;
   created_at: string;
   updated_at: string;
   restaurant?: {
@@ -27,11 +27,11 @@ const mapReservation = (row: ReservationDbRow): ReservationWithRestaurant => ({
   id: row.id,
   userId: row.user_id,
   restaurantId: row.restaurant_id,
-  date: row.date,
-  time: row.time,
-  partySize: row.party_size,
+  reservationDate: row.reservation_date,
+  reservationTime: row.reservation_time,
+  guestsCount: row.guests_count,
   status: row.status,
-  notes: row.notes ?? undefined,
+  specialRequest: row.special_request ?? undefined,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   restaurantName: row.restaurant?.name ?? null,
@@ -56,8 +56,8 @@ export async function getReservationsByUserId(userId: string) {
       `
     )
     .eq('user_id', userId)
-    .order('date', { ascending: false })
-    .order('time', { ascending: false });
+    .order('reservation_date', { ascending: false })
+    .order('reservation_time', { ascending: false });
 
   if (error) {
     throw error;
@@ -72,11 +72,11 @@ export async function createReservation(userId: string, payload: CreateReservati
     .insert({
       user_id: userId,
       restaurant_id: payload.restaurantId,
-      date: payload.date,
-      time: payload.time,
-      party_size: payload.partySize,
+      reservation_date: payload.reservationDate,
+      reservation_time: payload.reservationTime,
+      guests_count: payload.guestsCount,
       status: 'pending',
-      notes: payload.notes ?? null,
+      special_request: payload.specialRequest ?? null,
     })
     .select(
       `

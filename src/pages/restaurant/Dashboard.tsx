@@ -66,16 +66,16 @@ const upcomingReservations = [
   {
     id: 'RES-001',
     customer: 'Ana Martínez',
-    partySize: 4,
-    time: '7:30 PM',
-    date: 'Hoy',
+    guestsCount: 4,
+    reservationTime: '7:30 PM',
+    reservationDate: 'Hoy',
   },
   {
     id: 'RES-002',
     customer: 'Roberto Silva',
-    partySize: 2,
-    time: '8:15 PM',
-    date: 'Hoy',
+    guestsCount: 2,
+    reservationTime: '8:15 PM',
+    reservationDate: 'Hoy',
   },
 ];
 
@@ -458,9 +458,9 @@ export function RestaurantDashboard() {
                   <div className="space-y-1">
                     <p className="font-medium">{reservation.customer}</p>
                     <p className="text-sm text-gray-500">
-                      {reservation.partySize} personas • {reservation.time}
+                      {reservation.guestsCount} personas • {reservation.reservationTime}
                     </p>
-                    <p className="text-xs text-gray-400">{reservation.date}</p>
+                    <p className="text-xs text-gray-400">{reservation.reservationDate}</p>
                   </div>
                   <Button size="sm" variant="outline" className="w-full sm:w-auto">
                     Ver
