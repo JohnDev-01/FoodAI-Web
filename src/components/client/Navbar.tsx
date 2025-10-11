@@ -169,68 +169,73 @@ export function Navbar() {
       {isMenuOpen && (
         <div className="fixed inset-0 z-[60] md:hidden">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/45 backdrop-blur-sm"
             onClick={() => setIsMenuOpen(false)}
           />
-          <div className="absolute inset-y-0 right-0 flex w-80 max-w-[85vw]">
-            <div className="flex h-full w-full flex-col border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                <Link
-                  to={ROUTES.HOME}
-                  className="flex items-center space-x-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">F</span>
-                  </div>
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">
-                    FoodAI
-                  </span>
-                </Link>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 p-0"
-                  onClick={() => setIsMenuOpen(false)}
-                  aria-label="Cerrar menú"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+          <div className="absolute inset-y-0 left-0 flex w-[min(22rem,88vw)]">
+            <div className="flex h-full w-full flex-col overflow-hidden rounded-r-3xl border-r border-blue-100 bg-white shadow-2xl shadow-blue-500/20 dark:border-blue-900/40 dark:bg-gray-900">
+              <div className="relative overflow-hidden px-6 pb-6 pt-10">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 opacity-90" />
+                <div className="relative flex items-center justify-between text-white">
+                  <Link
+                    to={ROUTES.HOME}
+                    className="flex items-center gap-3"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+                      <span className="text-lg font-bold">F</span>
+                    </div>
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.35em] text-white/70">FoodAI</p>
+                      <p className="text-base font-semibold">Experiencias inteligentes</p>
+                    </div>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 w-9 rounded-full border border-white/30 bg-white/10 p-0 text-white hover:bg-white/20"
+                    onClick={() => setIsMenuOpen(false)}
+                    aria-label="Cerrar menú"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
                     Navegación
                   </p>
-                  <nav className="space-y-1">
+                  <nav className="space-y-2">
                     {navigation.map((item) => (
                       <Link
                         key={item.name}
                         to={item.href}
                         onClick={() => setIsMenuOpen(false)}
-                        className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition ${
+                        className={`flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium transition-shadow ${
                           location.pathname === item.href
-                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300'
-                            : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                            ? 'bg-blue-100 text-blue-700 shadow-sm dark:bg-blue-500/15 dark:text-blue-200'
+                            : 'bg-gray-50 text-gray-600 hover:shadow dark:bg-gray-800/80 dark:text-gray-300 dark:hover:bg-gray-800'
                         }`}
                       >
                         {item.name}
+                        <span className="text-xs text-gray-400 dark:text-gray-500">›</span>
                       </Link>
                     ))}
                   </nav>
                 </div>
 
                 {user?.role === 'restaurant' && (
-                  <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
                       Restaurante
                     </p>
                     <Link
                       to={ROUTES.RESTAURANT_DASHBOARD}
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      <Button className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow-lg shadow-blue-500/30 hover:from-blue-600 hover:via-indigo-500 hover:to-purple-500 border-0">
+                      <Button className="w-full rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50">
                         Ir al Dashboard
                       </Button>
                     </Link>
@@ -238,20 +243,16 @@ export function Navbar() {
                 )}
 
                 <div className="space-y-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
                     Acciones
                   </p>
-                  <div className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2 dark:border-gray-700">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      Cambiar tema
-                    </span>
+                  <div className="flex items-center justify-between rounded-2xl border border-gray-200 px-4 py-3 dark:border-gray-700">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">Cambiar tema</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 w-9 p-0"
-                      onClick={() => {
-                        toggleTheme();
-                      }}
+                      className="h-9 w-9 rounded-full border border-gray-200 p-0 dark:border-gray-700"
+                      onClick={toggleTheme}
                     >
                       {actualTheme === 'light' ? (
                         <Moon className="h-4 w-4" />
@@ -264,7 +265,7 @@ export function Navbar() {
                   <Link
                     to={ROUTES.CART}
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 dark:border-gray-700 dark:text-gray-300 dark:hover:border-blue-400 dark:hover:text-blue-300"
+                    className="flex items-center justify-between rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 dark:border-gray-700 dark:text-gray-300 dark:hover:border-blue-400 dark:hover:text-blue-300"
                   >
                     <span>Carrito</span>
                     <span className="inline-flex items-center gap-2">
@@ -278,49 +279,47 @@ export function Navbar() {
                   </Link>
                 </div>
 
-                <div className="space-y-3 border-t border-gray-200 pt-4 dark:border-gray-700">
+                <div className="space-y-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-700">
                   {user ? (
                     <>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {user.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {user.role === 'restaurant'
-                            ? 'Cuenta de restaurante'
-                            : user.role === 'admin'
-                              ? 'Administrador'
-                              : 'Cliente'}
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Link
-                          to={ROUTES.ACCOUNT}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <Button variant="outline" className="w-full">
-                            <User className="h-4 w-4 mr-2" />
-                            Mi cuenta
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {user.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {user.role === 'restaurant'
+                              ? 'Cuenta de restaurante'
+                              : user.role === 'admin'
+                                ? 'Administrador'
+                                : 'Cliente FoodAI'}
+                          </p>
+                        </div>
+                        <Link to={ROUTES.ACCOUNT} onClick={() => setIsMenuOpen(false)}>
+                          <Button variant="outline" size="sm" className="rounded-full px-4">
+                            <User className="h-4 w-4" />
                           </Button>
                         </Link>
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          onClick={handleLogout}
-                        >
-                          Cerrar sesión
-                        </Button>
                       </div>
+                      <Button
+                        variant="outline"
+                        className="w-full rounded-2xl"
+                        onClick={handleLogout}
+                      >
+                        Cerrar sesión
+                      </Button>
                     </>
                   ) : (
                     <div className="flex flex-col gap-2">
                       <Link to={ROUTES.LOGIN} onClick={() => setIsMenuOpen(false)}>
-                        <Button variant="ghost" className="w-full">
+                        <Button variant="ghost" className="w-full rounded-2xl">
                           Iniciar sesión
                         </Button>
                       </Link>
                       <Link to={ROUTES.REGISTER} onClick={() => setIsMenuOpen(false)}>
-                        <Button className="w-full">Registrarse</Button>
+                        <Button className="w-full rounded-2xl">
+                          Registrarse
+                        </Button>
                       </Link>
                     </div>
                   )}
@@ -333,4 +332,3 @@ export function Navbar() {
     </nav>
   );
 }
-
