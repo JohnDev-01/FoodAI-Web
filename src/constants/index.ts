@@ -100,6 +100,7 @@ export const ROUTES = {
   ADMIN_ANALYTICS: '/admin/analytics',
   ADMIN_SUBSCRIPTIONS: '/admin/subscriptions',
   ADMIN_ML: '/admin/ml',
+  ADMIN_RESERVATIONS: '/admin/reservations',
 } as const;
 
 export const APP_CONFIG = {

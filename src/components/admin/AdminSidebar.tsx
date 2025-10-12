@@ -7,11 +7,13 @@ import {
   BarChart3, 
   CreditCard, 
   Brain,
-  Settings
+  Settings,
+  CalendarClock
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: ROUTES.ADMIN_DASHBOARD, icon: LayoutDashboard },
+  { name: 'Reservas', href: ROUTES.ADMIN_RESERVATIONS, icon: CalendarClock },
   { name: 'Restaurantes', href: ROUTES.ADMIN_RESTAURANTS, icon: Building2 },
   { name: 'Analytics', href: ROUTES.ADMIN_ANALYTICS, icon: BarChart3 },
   { name: 'Suscripciones', href: ROUTES.ADMIN_SUBSCRIPTIONS, icon: CreditCard },
@@ -54,6 +56,5 @@ export function AdminSidebar() {
     </div>
   );
 }
-
 
 

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { 
@@ -11,6 +12,12 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
+import {
+  getPendingReservationsCount,
+  subscribeToReservationUpdates,
+  unsubscribeFromReservationUpdates,
+} from '../../services/reservationService';
+import { ROUTES } from '../../constants';
 
 // Mock data - en producción esto vendría de la API
 const mockStats = {
@@ -18,7 +25,6 @@ const mockStats = {
   totalUsers: 1250,
   totalRevenue: 125000,
   activeOrders: 89,
-  pendingApprovals: 3,
   systemHealth: 99.9,
   averageResponseTime: 120,
   uptime: 99.8,
@@ -83,6 +89,42 @@ const topRestaurants = [
 ];
 
 export function AdminDashboard() {
+  const navigate = useNavigate();
+  const [pendingReservations, setPendingReservations] = useState<number>(0);
+  const [isRealtimeSyncing, setIsRealtimeSyncing] = useState<boolean>(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPending = async () => {
+      try {
+        const count = await getPendingReservationsCount();
+        if (mounted) {
+          setPendingReservations(count);
+        }
+      } catch (error) {
+        console.error('Error obteniendo reservas pendientes:', error);
+      }
+    };
+
+    loadPending();
+
+    const channel = subscribeToReservationUpdates(() => {
+      if (!mounted) return;
+      setIsRealtimeSyncing(true);
+      loadPending().finally(() => {
+        if (mounted) {
+          setTimeout(() => setIsRealtimeSyncing(false), 400);
+        }
+      });
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribeFromReservationUpdates(channel);
+    };
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -93,6 +135,20 @@ export function AdminDashboard() {
         <p className="text-gray-600 dark:text-gray-400">
           Resumen general de la plataforma FoodAI
         </p>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-900/20 dark:text-blue-200">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
+            </span>
+            {pendingReservations} reservas pendientes
+          </div>
+          {isRealtimeSyncing && (
+            <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-200">
+              Sincronizando en vivo...
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -131,21 +187,33 @@ export function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">${mockStats.totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              +18% este mes
-            </p>
-          </CardContent>
-        </Card>
+            +18% este mes
+          </p>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pedidos Activos</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+        <Card className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-transparent" />
+          <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Reservas Pendientes</CardTitle>
+            <Activity className="h-4 w-4 text-blue-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.activeOrders}</div>
-            <p className="text-xs text-muted-foreground">
-              En tiempo real
-            </p>
+          <CardContent className="relative">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-200">
+                {pendingReservations}
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Reservas esperando aprobación
+                </p>
+                <p className="text-xs font-medium text-blue-600 dark:text-blue-300">
+                  {pendingReservations > 0
+                    ? 'Revisa la sección de reservas para aprobarlas'
+                    : 'Todo al día'}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -269,21 +337,24 @@ export function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Pending Approvals */}
-      {mockStats.pendingApprovals > 0 && (
-        <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10">
+      {/* Pending Reservations CTA */}
+      {pendingReservations > 0 && (
+        <Card className="border-blue-200 bg-blue-50 dark:border-blue-900/40 dark:bg-blue-900/15">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-yellow-600" />
-              <span>Aprobaciones Pendientes</span>
+            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-200">
+              <AlertCircle className="h-5 w-5" />
+              <span>Reservas pendientes por aprobar</span>
             </CardTitle>
             <CardDescription>
-              Tienes {mockStats.pendingApprovals} solicitudes esperando tu revisión
+              Tienes {pendingReservations} reservas esperando revisión y aprobación.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="bg-yellow-600 hover:bg-yellow-700">
-              Revisar Solicitudes
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => navigate(ROUTES.ADMIN_RESERVATIONS)}
+            >
+              Ver reservas
             </Button>
           </CardContent>
         </Card>
@@ -291,6 +362,3 @@ export function AdminDashboard() {
     </div>
   );
 }
-
-
-

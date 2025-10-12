@@ -118,6 +118,7 @@ export interface Reservation {
   guestsCount: number;
   status: ReservationStatus;
   specialRequest?: string;
+  reasonCancellation?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -125,6 +126,12 @@ export interface Reservation {
 export interface ReservationWithRestaurant extends Reservation {
   restaurantName?: string | null;
   restaurantLogo?: string | null;
+}
+
+export interface ReservationAdminView extends ReservationWithRestaurant {
+  userName?: string | null;
+  userEmail?: string | null;
+  restaurantOwnerId?: string | null;
 }
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';

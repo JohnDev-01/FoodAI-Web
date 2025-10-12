@@ -24,9 +24,11 @@ import { ClientOnboarding } from './pages/client/Onboarding';
 // Dashboard Restaurante
 import { RestaurantDashboard } from './pages/restaurant/Dashboard';
 import { RestaurantOnboarding } from './pages/restaurant/Onboarding';
+import { RestaurantReservations } from './pages/restaurant/Reservations';
 
 // Admin
 import { AdminDashboard } from './pages/admin/Dashboard';
+import { AdminReservations } from './pages/admin/Reservations';
 
 // Protected Routes
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -106,6 +108,7 @@ function App() {
                   }>
                     <Route index element={<Navigate to="/restaurant/dashboard" replace />} />
                     <Route path="dashboard" element={<RestaurantDashboard />} />
+                    <Route path="reservations" element={<RestaurantReservations />} />
                     {/* Add more restaurant routes as needed */}
                   </Route>
 
@@ -119,6 +122,7 @@ function App() {
                   }>
                     <Route index element={<Navigate to="/admin/dashboard" replace />} />
                     <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="reservations" element={<AdminReservations />} />
                     {/* Add more admin routes as needed */}
                   </Route>
 

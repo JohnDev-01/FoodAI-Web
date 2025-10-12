@@ -1,8 +1,10 @@
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabaseClient } from './supabaseClient';
 import type {
   CreateReservationPayload,
   ReservationWithRestaurant,
   ReservationStatus,
+  ReservationAdminView,
 } from '../types';
 
 interface ReservationDbRow {
@@ -14,12 +16,20 @@ interface ReservationDbRow {
   guests_count: number;
   status: ReservationStatus;
   special_request: string | null;
+  reason_cancellation: string | null;
   created_at: string;
   updated_at: string;
   restaurant?: {
     id: string;
     name: string;
+    owner_id: string | null;
     logo_url: string | null;
+  } | null;
+  user?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
   } | null;
 }
 
@@ -32,10 +42,22 @@ const mapReservation = (row: ReservationDbRow): ReservationWithRestaurant => ({
   guestsCount: row.guests_count,
   status: row.status,
   specialRequest: row.special_request ?? undefined,
+  reasonCancellation: row.reason_cancellation ?? undefined,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   restaurantName: row.restaurant?.name ?? null,
   restaurantLogo: row.restaurant?.logo_url ?? null,
+});
+
+const mapAdminReservation = (row: ReservationDbRow): ReservationAdminView => ({
+  ...mapReservation(row),
+  restaurantOwnerId: row.restaurant?.owner_id ?? null,
+  userName:
+    [row.user?.first_name, row.user?.last_name]
+      .map((piece) => piece?.trim())
+      .filter(Boolean)
+      .join(' ') || row.user?.email || null,
+  userEmail: row.user?.email ?? null,
 });
 
 export async function getReservationsByUserId(userId: string) {
@@ -97,10 +119,10 @@ export async function createReservation(userId: string, payload: CreateReservati
   return mapReservation(data as ReservationDbRow);
 }
 
-export async function cancelReservation(reservationId: string) {
+export async function cancelReservation(reservationId: string, reason?: string) {
   const { data, error } = await supabaseClient
     .from('reservations')
-    .update({ status: 'cancelled' })
+    .update({ status: 'cancelled', reason_cancellation: reason ?? null })
     .eq('id', reservationId)
     .select(
       `
@@ -119,4 +141,156 @@ export async function cancelReservation(reservationId: string) {
   }
 
   return mapReservation(data as ReservationDbRow);
+}
+
+export async function getAllReservations() {
+  const { data, error } = await supabaseClient
+    .from('reservations')
+    .select(
+      `
+        *,
+        restaurant:restaurants (
+          id,
+          name,
+          logo_url,
+          owner_id
+        ),
+        user:users (
+          id,
+          first_name,
+          last_name,
+          email
+        )
+      `
+    )
+    .order('reservation_date', { ascending: false })
+    .order('reservation_time', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as ReservationDbRow[]).map(mapAdminReservation);
+}
+
+export async function getReservationsByRestaurantId(restaurantId: string) {
+  if (!restaurantId) {
+    return [];
+  }
+
+  const { data, error } = await supabaseClient
+    .from('reservations')
+    .select(
+      `
+        *,
+        restaurant:restaurants (
+          id,
+          name,
+          logo_url,
+          owner_id
+        ),
+        user:users (
+          id,
+          first_name,
+          last_name,
+          email
+        )
+      `
+    )
+    .eq('restaurant_id', restaurantId)
+    .order('reservation_date', { ascending: false })
+    .order('reservation_time', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as ReservationDbRow[]).map(mapAdminReservation);
+}
+
+export async function updateReservationStatus(
+  reservationId: string,
+  status: ReservationStatus,
+  options: { reasonCancellation?: string } = {}
+) {
+  const payload: Record<string, unknown> = {
+    status,
+  };
+
+  if (status === 'cancelled') {
+    payload.reason_cancellation = options.reasonCancellation ?? null;
+  } else {
+    payload.reason_cancellation = null;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('reservations')
+    .update(payload)
+    .eq('id', reservationId)
+    .select(
+      `
+        *,
+        restaurant:restaurants (
+          id,
+          name,
+          logo_url,
+          owner_id
+        ),
+        user:users (
+          id,
+          first_name,
+          last_name,
+          email
+        )
+      `
+    )
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapAdminReservation(data as ReservationDbRow);
+}
+
+export function subscribeToReservationUpdates(
+  callback: (payload: { eventType: 'INSERT' | 'UPDATE' | 'DELETE'; new: any; old: any }) => void
+): RealtimeChannel {
+  const channel = supabaseClient
+    .channel('reservations-dashboard')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'reservations',
+      },
+      (payload) => {
+        callback({
+          eventType: payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE',
+          new: (payload as any).new,
+          old: (payload as any).old,
+        });
+      }
+    )
+    .subscribe();
+
+  return channel;
+}
+
+export function unsubscribeFromReservationUpdates(channel: RealtimeChannel) {
+  supabaseClient.removeChannel(channel);
+}
+
+export async function getPendingReservationsCount() {
+  const { count, error } = await supabaseClient
+    .from('reservations')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
 }

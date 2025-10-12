@@ -367,6 +367,11 @@ export function Home() {
                                   “{reservation.specialRequest}”
                                 </p>
                               )}
+                              {reservation.status === 'cancelled' && reservation.reasonCancellation && (
+                                <p className="mt-3 text-sm text-rose-500 dark:text-rose-300">
+                                  Motivo de cancelación: “{reservation.reasonCancellation}”
+                                </p>
+                              )}
                             </div>
                           );
                         })}

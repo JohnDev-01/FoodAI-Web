@@ -481,6 +481,11 @@ export function Reservations() {
                               “{reservation.specialRequest}”
                             </p>
                           )}
+                          {reservation.status === 'cancelled' && reservation.reasonCancellation && (
+                            <p className="mt-2 rounded-xl bg-rose-500/10 px-4 py-2 text-xs text-rose-200">
+                              Motivo de cancelación: “{reservation.reasonCancellation}”
+                            </p>
+                          )}
                         </div>
 
                         <div className="flex flex-col items-start gap-3 sm:items-end">
