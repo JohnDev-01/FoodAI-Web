@@ -1,4 +1,5 @@
 import { supabaseClient } from './supabaseClient';
+import { sendWelcomeEmail } from './mailService';
 import type { UserProfile, UserRole, UserStatus } from '../types';
 
 interface UserProfileDbRow {
@@ -101,5 +102,13 @@ export async function upsertUserProfile(input: {
     throw error;
   }
 
-  return mapToUserProfile(data);
+  const profile = mapToUserProfile(data);
+  const fullName = `${profile.firstName} ${profile.lastName}`.trim() || profile.email;
+  await sendWelcomeEmail({
+    email: profile.email,
+    fullName,
+    role: profile.role,
+  });
+
+  return profile;
 }

@@ -1,5 +1,9 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabaseClient } from './supabaseClient';
+import {
+  sendReservationCreatedEmail,
+  sendReservationStatusEmail,
+} from './mailService';
 import type {
   CreateReservationPayload,
   ReservationWithRestaurant,
@@ -57,7 +61,7 @@ const mapAdminReservation = (row: ReservationDbRow): ReservationAdminView => ({
       .map((piece) => piece?.trim())
       .filter(Boolean)
       .join(' ') || row.user?.email || null,
-  userEmail: row.user?.email ?? null,
+  userEmail: row.user?.email ?? "",
 });
 
 export async function getReservationsByUserId(userId: string) {
@@ -107,6 +111,12 @@ export async function createReservation(userId: string, payload: CreateReservati
           id,
           name,
           logo_url
+        ),
+        user:users (
+          id,
+          first_name,
+          last_name,
+          email
         )
       `
     )
@@ -116,7 +126,30 @@ export async function createReservation(userId: string, payload: CreateReservati
     throw error;
   }
 
-  return mapReservation(data as ReservationDbRow);
+  const row = data as ReservationDbRow;
+  const mapped = mapReservation(row);
+
+  const guestEmail = row.user?.email;
+  if (guestEmail) {
+    const guestName =
+      [row.user?.first_name, row.user?.last_name]
+        .map((piece) => piece?.trim())
+        .filter(Boolean)
+        .join(' ') || guestEmail;
+    await sendReservationCreatedEmail({
+      email: guestEmail,
+      fullName: guestName,
+      reservation: {
+        reservationDate: row.reservation_date,
+        reservationTime: row.reservation_time,
+        guestsCount: row.guests_count,
+        restaurantName: row.restaurant?.name ?? null,
+        specialRequest: row.special_request ?? undefined,
+      },
+    });
+  }
+
+  return mapped;
 }
 
 export async function cancelReservation(reservationId: string, reason?: string) {
@@ -131,6 +164,12 @@ export async function cancelReservation(reservationId: string, reason?: string) 
           id,
           name,
           logo_url
+        ),
+        user:users (
+          id,
+          first_name,
+          last_name,
+          email
         )
       `
     )
@@ -140,7 +179,33 @@ export async function cancelReservation(reservationId: string, reason?: string) 
     throw error;
   }
 
-  return mapReservation(data as ReservationDbRow);
+  const row = data as ReservationDbRow;
+  const mapped = mapReservation(row);
+  const guestEmail = row.user?.email;
+
+  if (guestEmail) {
+    const guestName =
+      [row.user?.first_name, row.user?.last_name]
+        .map((piece) => piece?.trim())
+        .filter(Boolean)
+        .join(' ') || guestEmail;
+
+    await sendReservationStatusEmail({
+      email: guestEmail,
+      fullName: guestName,
+      status: 'cancelled',
+      reservation: {
+        reservationDate: row.reservation_date,
+        reservationTime: row.reservation_time,
+        guestsCount: row.guests_count,
+        restaurantName: row.restaurant?.name ?? null,
+        specialRequest: row.special_request ?? undefined,
+        reasonCancellation: row.reason_cancellation ?? reason,
+      },
+    });
+  }
+
+  return mapped;
 }
 
 export async function getAllReservations() {
@@ -250,7 +315,33 @@ export async function updateReservationStatus(
     throw error;
   }
 
-  return mapAdminReservation(data as ReservationDbRow);
+  const row = data as ReservationDbRow;
+  const mapped = mapAdminReservation(row);
+  const guestEmail = row.user?.email;
+
+  if (guestEmail && (status === 'confirmed' || status === 'cancelled' || status === 'completed')) {
+    const guestName =
+      [row.user?.first_name, row.user?.last_name]
+        .map((piece) => piece?.trim())
+        .filter(Boolean)
+        .join(' ') || guestEmail;
+
+    await sendReservationStatusEmail({
+      email: guestEmail,
+      fullName: guestName,
+      status,
+      reservation: {
+        reservationDate: row.reservation_date,
+        reservationTime: row.reservation_time,
+        guestsCount: row.guests_count,
+        restaurantName: row.restaurant?.name ?? null,
+        specialRequest: row.special_request ?? undefined,
+        reasonCancellation: row.reason_cancellation ?? options.reasonCancellation,
+      },
+    });
+  }
+
+  return mapped;
 }
 
 export function subscribeToReservationUpdates(

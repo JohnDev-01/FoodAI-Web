@@ -130,7 +130,7 @@ export interface ReservationWithRestaurant extends Reservation {
 
 export interface ReservationAdminView extends ReservationWithRestaurant {
   userName?: string | null;
-  userEmail?: string | null;
+  userEmail?: string ;
   restaurantOwnerId?: string | null;
 }
 
