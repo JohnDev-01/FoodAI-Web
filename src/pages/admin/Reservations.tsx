@@ -76,6 +76,14 @@ function buildBadgeClasses(status: ReservationStatus) {
 
 const statusOrder: ReservationGroupKey[] = ['pending', 'confirmed', 'cancelled', 'completed'];
 
+const ReservationCardBase = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  (props, ref) => <div ref={ref} {...props} />
+);
+ReservationCardBase.displayName = 'ReservationCardBase';
+
+const MotionReservationCard = motion(ReservationCardBase);
+MotionReservationCard.displayName = 'MotionReservationCard';
+
 export function AdminReservations() {
   const [reservations, setReservations] = useState<ReservationAdminView[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -264,7 +272,7 @@ export function AdminReservations() {
                 <div className="grid gap-4 lg:grid-cols-2">
                   <AnimatePresence>
                     {items.map((reservation) => (
-                      <motion.div
+                      <MotionReservationCard
                         key={reservation.id}
                         layout
                         initial="hidden"
@@ -361,7 +369,7 @@ export function AdminReservations() {
                             )}
                           </div>
                         </div>
-                      </motion.div>
+                      </MotionReservationCard>
                     ))}
                   </AnimatePresence>
                 </div>
