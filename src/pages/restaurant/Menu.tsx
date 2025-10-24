@@ -6,14 +6,12 @@ import {
   Edit2, 
   Trash2, 
   X,
-  DollarSign,
   Clock,
   ChefHat,
-  AlertTriangle,
   Image as ImageIcon,
   Save
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAuth } from '../../context/AuthContext';
