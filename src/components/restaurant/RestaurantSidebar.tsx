@@ -1,24 +1,18 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { ROUTES } from '../../constants';
-import { 
-  LayoutDashboard, 
-  Menu, 
-  ShoppingBag, 
-  Calendar, 
-  Package, 
-  TrendingUp, 
+import {
+  LayoutDashboard,
+  Calendar,
+  Menu,
   BarChart3,
   Settings
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: ROUTES.RESTAURANT_DASHBOARD, icon: LayoutDashboard },
-  { name: 'Menú', href: ROUTES.RESTAURANT_MENU, icon: Menu },
-  { name: 'Pedidos', href: ROUTES.RESTAURANT_ORDERS, icon: ShoppingBag },
   { name: 'Reservas', href: ROUTES.RESTAURANT_RESERVATIONS, icon: Calendar },
-  { name: 'Inventario', href: ROUTES.RESTAURANT_INVENTORY, icon: Package },
-  { name: 'Predicciones', href: ROUTES.RESTAURANT_PREDICTIONS, icon: TrendingUp },
+  { name: 'Menús', href: ROUTES.RESTAURANT_PREDICTIONS, icon: Menu },
   { name: 'Analytics', href: ROUTES.RESTAURANT_ANALYTICS, icon: BarChart3 },
   { name: 'Configuración', href: '/restaurant/settings', icon: Settings },
 ];

@@ -14,6 +14,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 // Cliente - Vista Principal
 import { Home } from './pages/Home';
 import { RestaurantList } from './pages/client/RestaurantList';
+import { RestaurantDetail } from './pages/client/RestaurantDetail';
 import { Reservations } from './pages/client/Reservations';
 import { About } from './pages/About';
 import { Login } from './pages/auth/Login';
@@ -25,6 +26,8 @@ import { ClientOnboarding } from './pages/client/Onboarding';
 import { RestaurantDashboard } from './pages/restaurant/Dashboard';
 import { RestaurantOnboarding } from './pages/restaurant/Onboarding';
 import { RestaurantReservations } from './pages/restaurant/Reservations';
+import { RestaurantAnalytics } from './pages/restaurant/Analytics';
+import { RestaurantSettings } from './pages/restaurant/Settings';
 
 // Admin
 import { AdminDashboard } from './pages/admin/Dashboard';
@@ -59,6 +62,7 @@ function App() {
                   <Route path="/" element={<ClientLayout />}>
                     <Route index element={<Home />} />
                     <Route path="restaurants" element={<RestaurantList />} />
+                    <Route path="restaurants/:id" element={<RestaurantDetail />} />
                     <Route
                       path="reservations"
                       element={
@@ -109,6 +113,8 @@ function App() {
                     <Route index element={<Navigate to="/restaurant/dashboard" replace />} />
                     <Route path="dashboard" element={<RestaurantDashboard />} />
                     <Route path="reservations" element={<RestaurantReservations />} />
+                    <Route path="analytics" element={<RestaurantAnalytics />} />
+                    <Route path="settings" element={<RestaurantSettings />} />
                     {/* Add more restaurant routes as needed */}
                   </Route>
 

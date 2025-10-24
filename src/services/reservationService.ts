@@ -149,6 +149,7 @@ export async function createReservation(userId: string, payload: CreateReservati
     });
   }
 
+
   return mapped;
 }
 
@@ -204,6 +205,7 @@ export async function cancelReservation(reservationId: string, reason?: string) 
       },
     });
   }
+
 
   return mapped;
 }
@@ -341,6 +343,7 @@ export async function updateReservationStatus(
     });
   }
 
+
   return mapped;
 }
 
@@ -384,4 +387,60 @@ export async function getPendingReservationsCount() {
   }
 
   return count ?? 0;
+}
+
+export async function getRestaurantReservations(restaurantId: string): Promise<ReservationWithRestaurant[]> {
+  const { data, error } = await supabaseClient
+    .from('reservations')
+    .select(`
+      *,
+      user:users!reservations_user_id_fkey (
+        id,
+        first_name,
+        last_name,
+        email
+      ),
+      restaurant:restaurants!reservations_restaurant_id_fkey (
+        id,
+        name,
+        address,
+        phone,
+        email
+      )
+    `)
+    .eq('restaurant_id', restaurantId)
+    .order('reservation_date', { ascending: false })
+    .order('reservation_time', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching restaurant reservations:', error);
+    throw error;
+  }
+
+  return data?.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    restaurantId: row.restaurant_id,
+    reservationDate: row.reservation_date,
+    reservationTime: row.reservation_time,
+    guestsCount: row.guests_count,
+    status: row.status as ReservationStatus,
+    specialRequest: row.special_request,
+    reasonCancellation: row.reason_cancellation,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    user: row.user ? {
+      id: row.user.id,
+      firstName: row.user.first_name,
+      lastName: row.user.last_name,
+      email: row.user.email,
+    } : undefined,
+    restaurant: row.restaurant ? {
+      id: row.restaurant.id,
+      name: row.restaurant.name,
+      address: row.restaurant.address,
+      phone: row.restaurant.phone,
+      email: row.restaurant.email,
+    } : undefined,
+  })) || [];
 }

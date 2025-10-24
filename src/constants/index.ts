@@ -58,8 +58,7 @@ export const API_ENDPOINTS = {
   INVENTORY: '/inventory',
   INVENTORY_ITEMS: '/inventory/items',
   
-  // Analytics
-  ANALYTICS: '/analytics',
+  // Reports
   REPORTS: '/reports',
   
   // ML
@@ -97,7 +96,6 @@ export const ROUTES = {
   // Admin
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_RESTAURANTS: '/admin/restaurants',
-  ADMIN_ANALYTICS: '/admin/analytics',
   ADMIN_SUBSCRIPTIONS: '/admin/subscriptions',
   ADMIN_ML: '/admin/ml',
   ADMIN_RESERVATIONS: '/admin/reservations',
