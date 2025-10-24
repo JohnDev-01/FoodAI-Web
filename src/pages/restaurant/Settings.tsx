@@ -67,7 +67,7 @@ export function RestaurantSettings() {
     openingHours: '',
     closingHours: '',
     website: '',
-    status: 'active' as const,
+    status: 'active' as 'active' | 'suspended' | 'pending',
   });
 
   const [profileForm, setProfileForm] = useState({
@@ -88,18 +88,18 @@ export function RestaurantSettings() {
         
         // Llenar formulario con datos del restaurante
         setRestaurantForm({
-          name: restaurantData.name || '',
-          description: restaurantData.description || '',
-          email: restaurantData.email || '',
-          phone: restaurantData.phone || '',
-          address: restaurantData.address || '',
-          city: restaurantData.city || '',
-          cuisineType: restaurantData.cuisineType || '',
-          capacity: restaurantData.capacity || 0,
-          openingHours: restaurantData.openingHours || '',
-          closingHours: restaurantData.closingHours || '',
-          website: restaurantData.website || '',
-          status: restaurantData.status || 'active',
+          name: restaurantData?.name || '',
+          description: restaurantData?.description || '',
+          email: restaurantData?.email || '',
+          phone: restaurantData?.phone || '',
+          address: restaurantData?.address || '',
+          city: restaurantData?.city || '',
+          cuisineType: restaurantData?.cuisineType || '',
+          capacity: restaurantData?.capacity || 0,
+          openingHours: restaurantData?.openingHours || '',
+          closingHours: restaurantData?.closingHours || '',
+          website: restaurantData?.website || '',
+          status: restaurantData?.status || 'active',
         });
 
         // Llenar formulario de perfil

@@ -8,6 +8,8 @@ import type {
   CreateReservationPayload,
   ReservationWithRestaurant,
   ReservationStatus,
+  UserRole,
+  UserStatus,
   ReservationAdminView,
 } from '../types';
 
@@ -431,10 +433,19 @@ export async function getRestaurantReservations(restaurantId: string): Promise<R
     updatedAt: row.updated_at,
     user: row.user ? {
       id: row.user.id,
+      authId: row.user.auth_id || '',
       firstName: row.user.first_name,
       lastName: row.user.last_name,
       email: row.user.email,
-    } : undefined,
+      fullName: `${row.user.first_name} ${row.user.last_name}`,
+      name: `${row.user.first_name} ${row.user.last_name}`,
+      role: row.user.role as UserRole,
+      status: row.user.status as UserStatus,
+      profileImage: row.user.profile_image,
+      phone: row.user.phone,
+      createdAt: row.user.created_at,
+      updatedAt: row.user.updated_at,
+    } : null,
     restaurant: row.restaurant ? {
       id: row.restaurant.id,
       name: row.restaurant.name,
