@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Loader2,
   CalendarDays,
@@ -53,11 +53,15 @@ const todayIso = () => {
 
 export function Reservations() {
   const { user, initialising } = useAuth();
+  const location = useLocation();
   const [reservations, setReservations] = useState<ReservationWithRestaurant[]>([]);
   const [loadingReservations, setLoadingReservations] = useState<boolean>(false);
   const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
   const [restaurantPickerOpen, setRestaurantPickerOpen] = useState<boolean>(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+
+  // Obtener datos del restaurante desde la navegación
+  const restaurantFromNavigation = location.state?.restaurant as Restaurant | undefined;
 
   const {
     register,
@@ -94,6 +98,18 @@ export function Reservations() {
     },
     [clearErrors, setValue]
   );
+
+  // Configurar restaurante cuando viene de la navegación
+  useEffect(() => {
+    if (restaurantFromNavigation) {
+      setSelectedRestaurant(restaurantFromNavigation);
+      setValue('restaurantId', restaurantFromNavigation.id, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      clearErrors('restaurantId');
+    }
+  }, [restaurantFromNavigation, setValue, clearErrors]);
 
   useEffect(() => {
     let mounted = true;

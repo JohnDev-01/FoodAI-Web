@@ -47,17 +47,75 @@ export interface Restaurant {
   address?: string | null;
   city?: string | null;
   country?: string | null;
-  cuisine?: string | null;
   cuisineType?: string | null;
   openTime?: string | null;
   closeTime?: string | null;
   logoUrl?: string | null;
   rating?: number | null;
   status: RestaurantStatus;
-  imageUrl?: string;
-  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// Restaurant creation/update types
+export interface CreateRestaurantInput {
+  ownerId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  cuisineType?: string;
+  openTime?: string;
+  closeTime?: string;
+  logoUrl?: string;
+  status?: RestaurantStatus;
+}
+
+export interface UpdateRestaurantInput {
+  name?: string;
+  email?: string;
+  phone?: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  cuisineType?: string;
+  openTime?: string;
+  closeTime?: string;
+  logoUrl?: string;
+  status?: RestaurantStatus;
+  rating?: number;
+}
+
+// Restaurant search and pagination
+export interface RestaurantSearchOptions {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  status?: RestaurantStatus | 'all';
+  city?: string;
+  cuisineType?: string;
+  sortBy?: 'name' | 'rating' | 'created_at';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface RestaurantSearchResult {
+  items: Restaurant[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+// Restaurant with additional data
+export interface RestaurantWithStats extends Restaurant {
+  totalReservations?: number;
+  totalOrders?: number;
+  averageRating?: number;
+  isOpen?: boolean;
 }
 
 // Menu types
@@ -166,6 +224,7 @@ export interface ChartData {
   value: number;
   date?: string;
 }
+
 
 // API Response types
 export interface ApiResponse<T> {
@@ -298,4 +357,54 @@ export interface Theme {
     up: (key: string) => string;
     down: (key: string) => string;
   };
+}
+
+// Tipos para platos e imágenes
+export interface Dish {
+  id: string;
+  restaurantId: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  imageUrl?: string;
+  isAvailable: boolean;
+  ingredients?: string[];
+  allergens?: string[];
+  preparationTime?: number; // en minutos
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DishImage {
+  id: string;
+  dishId: string;
+  imageUrl: string;
+  altText: string;
+  isPrimary: boolean;
+  createdAt: string;
+}
+
+export interface CreateDishInput {
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  imageUrl?: string;
+  isAvailable?: boolean;
+  ingredients?: string[];
+  allergens?: string[];
+  preparationTime?: number;
+}
+
+export interface UpdateDishInput {
+  name?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  imageUrl?: string;
+  isAvailable?: boolean;
+  ingredients?: string[];
+  allergens?: string[];
+  preparationTime?: number;
 }
