@@ -1,7 +1,7 @@
 import { supabaseClient } from './supabaseClient';
 import type { Dish, CreateDishInput, UpdateDishInput, DishImage } from '../types';
 
-// Obtener platos de un restaurante
+// Obtener platos de un restaurante (solo disponibles)
 export async function getDishesByRestaurant(restaurantId: string): Promise<Dish[]> {
   const { data, error } = await supabaseClient
     .from('dishes')
@@ -13,6 +13,37 @@ export async function getDishesByRestaurant(restaurantId: string): Promise<Dish[
 
   if (error) {
     console.error('Error fetching dishes:', error);
+    throw error;
+  }
+
+  return data?.map((row) => ({
+    id: row.id,
+    restaurantId: row.restaurant_id,
+    name: row.name,
+    description: row.description,
+    price: row.price,
+    category: row.category,
+    imageUrl: row.image_url,
+    isAvailable: row.is_available,
+    ingredients: row.ingredients || [],
+    allergens: row.allergens || [],
+    preparationTime: row.preparation_time,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  })) || [];
+}
+
+// Obtener todos los platos de un restaurante (incluyendo no disponibles) - para administración
+export async function getAllDishesByRestaurant(restaurantId: string): Promise<Dish[]> {
+  const { data, error } = await supabaseClient
+    .from('dishes')
+    .select('*')
+    .eq('restaurant_id', restaurantId)
+    .order('category', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching all dishes:', error);
     throw error;
   }
 

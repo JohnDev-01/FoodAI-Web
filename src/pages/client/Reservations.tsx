@@ -18,9 +18,10 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { ROUTES } from '../../constants';
-import type { ReservationStatus, ReservationWithRestaurant, Restaurant } from '../../types';
+import type { ReservationStatus, ReservationWithRestaurant, Restaurant, Dish, SelectedDish } from '../../types';
 import { createReservation, getReservationsByUserId, cancelReservation } from '../../services/reservationService';
 import { searchRestaurants } from '../../services/restaurantService';
+import { getDishesByRestaurant } from '../../services/dishService';
 
 type ReservationFormValues = {
   restaurantId: string;
@@ -59,6 +60,9 @@ export function Reservations() {
   const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
   const [restaurantPickerOpen, setRestaurantPickerOpen] = useState<boolean>(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [selectedDishes, setSelectedDishes] = useState<Record<string, number>>({});
+  const [loadingDishes, setLoadingDishes] = useState<boolean>(false);
 
   // Obtener datos del restaurante desde la navegación
   const restaurantFromNavigation = location.state?.restaurant as Restaurant | undefined;
@@ -110,6 +114,30 @@ export function Reservations() {
       clearErrors('restaurantId');
     }
   }, [restaurantFromNavigation, setValue, clearErrors]);
+
+  // Cargar platos cuando se selecciona un restaurante
+  useEffect(() => {
+    const loadDishes = async () => {
+      if (!selectedRestaurant?.id) {
+        setDishes([]);
+        setSelectedDishes([]);
+        return;
+      }
+
+      try {
+        setLoadingDishes(true);
+        const restaurantDishes = await getDishesByRestaurant(selectedRestaurant.id);
+        setDishes(restaurantDishes);
+      } catch (error) {
+        console.error('Error al cargar los platos:', error);
+        toast.error('No se pudieron cargar los platos del restaurante');
+      } finally {
+        setLoadingDishes(false);
+      }
+    };
+
+    loadDishes();
+  }, [selectedRestaurant?.id]);
 
   useEffect(() => {
     let mounted = true;
@@ -164,6 +192,43 @@ export function Reservations() {
       .slice(0, 3);
   }, [reservations]);
 
+  const updateDishQuantity = (dishId: string, quantity: number) => {
+    setSelectedDishes((prev) => {
+      if (quantity <= 0) {
+        const { [dishId]: _, ...rest } = prev;
+        return rest;
+      }
+      return {
+        ...prev,
+        [dishId]: quantity,
+      };
+    });
+  };
+
+  const increaseDishQuantity = (dishId: string) => {
+    setSelectedDishes((prev) => {
+      const currentQuantity = prev[dishId] || 0;
+      return {
+        ...prev,
+        [dishId]: currentQuantity + 1,
+      };
+    });
+  };
+
+  const decreaseDishQuantity = (dishId: string) => {
+    setSelectedDishes((prev) => {
+      const currentQuantity = prev[dishId] || 0;
+      if (currentQuantity <= 1) {
+        const { [dishId]: _, ...rest } = prev;
+        return rest;
+      }
+      return {
+        ...prev,
+        [dishId]: currentQuantity - 1,
+      };
+    });
+  };
+
   const handleCreateReservation = async (values: ReservationFormValues) => {
     if (!user?.id) {
       toast.error('Inicia sesión para crear una reserva.');
@@ -172,12 +237,20 @@ export function Reservations() {
 
     try {
       setFormSubmitting(true);
+      
+      // Convertir el objeto de platos seleccionados a array
+      const dishesArray: SelectedDish[] = Object.entries(selectedDishes).map(([dishId, quantity]) => ({
+        dishId,
+        quantity,
+      }));
+
       const created = await createReservation(user.id, {
         restaurantId: values.restaurantId,
         reservationDate: values.reservationDate,
         reservationTime: values.reservationTime,
         guestsCount: Number(values.guestsCount),
         specialRequest: values.specialRequest?.trim() || undefined,
+        selectedDishes: dishesArray.length > 0 ? dishesArray : undefined,
       });
       setReservations((prev) => [created, ...prev]);
       toast.success('Reserva creada con éxito');
@@ -188,6 +261,7 @@ export function Reservations() {
         guestsCount: values.guestsCount,
         specialRequest: '',
       });
+      setSelectedDishes({});
     } catch (error) {
       console.error('Error al crear la reserva:', error);
       toast.error('No pudimos completar tu reserva.');
@@ -381,6 +455,89 @@ export function Reservations() {
                     <p className="mt-1 text-xs text-rose-500">{errors.restaurantId.message}</p>
                   )}
                 </div>
+
+                {/* Selección de Platos */}
+                {selectedRestaurant && (
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Selecciona tus platos (opcional)
+                    </label>
+                    {loadingDishes ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                      </div>
+                    ) : dishes.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400">
+                        No hay platos disponibles en este restaurante
+                      </div>
+                    ) : (
+                      <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
+                        {dishes.map((dish) => {
+                          const quantity = selectedDishes[dish.id] || 0;
+                          const isSelected = quantity > 0;
+
+                          return (
+                            <div
+                              key={dish.id}
+                              className={`flex w-full items-center gap-3 rounded-lg border p-3 transition ${
+                                isSelected
+                                  ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20'
+                                  : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+                              }`}
+                            >
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900 dark:text-white">
+                                  {dish.name}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {dish.category} • ${dish.price.toFixed(2)}
+                                </p>
+                              </div>
+                              
+                              {/* Controles de cantidad */}
+                              {isSelected ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => decreaseDishQuantity(dish.id)}
+                                    className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-gray-700 transition hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                  >
+                                    <span className="text-lg font-semibold">−</span>
+                                  </button>
+                                  <span className="min-w-[2rem] text-center font-semibold text-gray-900 dark:text-white">
+                                    {quantity}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => increaseDishQuantity(dish.id)}
+                                    className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white transition hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                                  >
+                                    <span className="text-lg font-semibold">+</span>
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => increaseDishQuantity(dish.id)}
+                                  className="flex h-8 items-center gap-1 rounded-full bg-blue-500 px-4 text-sm font-medium text-white transition hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                                >
+                                  <span className="text-lg font-semibold">+</span>
+                                  <span>Agregar</span>
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {Object.keys(selectedDishes).length > 0 && (
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                        {Object.keys(selectedDishes).length} plato(s) seleccionado(s) •{' '}
+                        {Object.values(selectedDishes).reduce((sum, qty) => sum + qty, 0)} unidades en total
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <Input

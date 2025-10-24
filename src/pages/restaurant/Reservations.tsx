@@ -8,6 +8,7 @@ import {
   Mail,
   Sparkles,
   Users,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Button } from '../../components/ui/Button';
@@ -19,7 +20,8 @@ import {
   unsubscribeFromReservationUpdates,
   updateReservationStatus,
 } from '../../services/reservationService';
-import type { ReservationAdminView, ReservationStatus, Restaurant } from '../../types';
+import { supabaseClient } from '../../services/supabaseClient';
+import type { ReservationAdminView, ReservationStatus, Restaurant, Dish } from '../../types';
 
 type ReservationGroupKey = ReservationStatus;
 
@@ -67,6 +69,114 @@ function formatDate(value: string) {
 
 function formatTime(value: string) {
   return value?.slice(0, 5) ?? value;
+}
+
+// Componente para mostrar los platos seleccionados con cantidades
+function SelectedDishes({ selectedDishes }: { selectedDishes: Array<{ dishId: string; quantity: number }> | null }) {
+  const [dishes, setDishes] = useState<Array<Dish & { quantity: number }>>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchDishes = async () => {
+      if (!selectedDishes || selectedDishes.length === 0) {
+        setDishes([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const dishIds = selectedDishes.map(d => d.dishId);
+        const { data, error } = await supabaseClient
+          .from('dishes')
+          .select('*')
+          .in('id', dishIds);
+
+        if (error) throw error;
+
+        if (data) {
+          const dishesWithQuantity = data.map((row) => {
+            const selectedDish = selectedDishes.find(d => d.dishId === row.id);
+            return {
+              id: row.id,
+              restaurantId: row.restaurant_id,
+              name: row.name,
+              description: row.description,
+              price: row.price,
+              category: row.category,
+              imageUrl: row.image_url,
+              isAvailable: row.is_available,
+              ingredients: row.ingredients || [],
+              allergens: row.allergens || [],
+              preparationTime: row.preparation_time,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+              quantity: selectedDish?.quantity || 1,
+            };
+          });
+          setDishes(dishesWithQuantity);
+        }
+      } catch (error) {
+        console.error('Error cargando platos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDishes();
+  }, [selectedDishes]);
+
+  if (!selectedDishes || selectedDishes.length === 0) {
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-900/40 dark:bg-blue-900/20">
+        <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-200">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Cargando platos seleccionados...
+        </div>
+      </div>
+    );
+  }
+
+  if (dishes.length === 0) {
+    return null;
+  }
+
+  const totalUnits = dishes.reduce((sum, dish) => sum + dish.quantity, 0);
+
+  return (
+    <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
+      <div className="flex items-center gap-2 mb-2">
+        <UtensilsCrossed className="h-4 w-4 text-blue-600 dark:text-blue-200" />
+        <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+          Platos Pre-seleccionados ({dishes.length} {dishes.length === 1 ? 'plato' : 'platos'}, {totalUnits} {totalUnits === 1 ? 'unidad' : 'unidades'})
+        </h4>
+      </div>
+      <ul className="space-y-2">
+        {dishes.map((dish) => (
+          <li
+            key={dish.id}
+            className="flex items-center justify-between text-sm text-blue-800 dark:text-blue-100"
+          >
+            <div className="flex-1">
+              <span className="font-medium">{dish.name}</span>
+              <span className="text-blue-600 dark:text-blue-300 font-semibold ml-2">x {dish.quantity}</span>
+              <span className="text-blue-600 dark:text-blue-300 ml-2">({dish.category})</span>
+            </div>
+            <span className="font-semibold text-green-600 dark:text-green-400">
+              ${(dish.price * dish.quantity).toFixed(2)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs text-blue-600 dark:text-blue-300 italic">
+        El cliente puede modificar su pedido al momento de confirmar la reserva.
+      </p>
+    </div>
+  );
 }
 
 export function RestaurantReservations() {
@@ -369,6 +479,9 @@ export function RestaurantReservations() {
                           Nota del cliente: {reservation.specialRequest}
                         </p>
                       )}
+
+                      {/* Mostrar platos seleccionados */}
+                      <SelectedDishes selectedDishes={reservation.selectedDishes || null} />
                     </div>
 
                     <div className="flex flex-col gap-2 sm:items-end">

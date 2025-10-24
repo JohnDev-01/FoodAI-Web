@@ -58,3 +58,10 @@ export const uploadRestaurantLogo = async (
 ): Promise<string> => {
   return uploadImageToStorage(file, ['restaurants', restaurantId, 'logo']);
 };
+
+export const uploadDishImage = async (
+  file: File,
+  restaurantId: string
+): Promise<string> => {
+  return uploadImageToStorage(file, ['restaurants', restaurantId, 'dishes']);
+};

@@ -14,6 +14,7 @@ interface ReservationDetails {
   restaurantName?: string | null;
   specialRequest?: string;
   reasonCancellation?: string;
+  selectedDishesInfo?: Array<{ name: string; price: number; category: string; quantity: number }>;
 }
 
 const escapeHtml = (input: string | null | undefined): string => {
@@ -305,6 +306,44 @@ export const sendReservationCreatedEmail = async ({
 
   const subject = `Tu reserva en ${reservation.restaurantName ?? 'FoodAI'} está en camino`;
 
+  // Construir la sección de platos si existen
+  const dishesSection = reservation.selectedDishesInfo && reservation.selectedDishesInfo.length > 0
+    ? {
+        heading: '🍽️ Platos Seleccionados',
+        content: `
+          Has pre-seleccionado los siguientes platos de interés:<br/>
+          <ul style="margin: 8px 0; padding-left: 20px;">
+            ${reservation.selectedDishesInfo.map(dish => 
+              `<li><strong>${escapeHtml(dish.name)}</strong> x ${dish.quantity} (${escapeHtml(dish.category)}) - $${(dish.price * dish.quantity).toFixed(2)}</li>`
+            ).join('')}
+          </ul>
+          <em style="font-size: 12px; color: #64748b;">Podrás confirmar o modificar tu selección al momento de tu visita.</em>
+        `.trim(),
+      }
+    : null;
+
+  const sections = [
+    {
+      heading: 'Detalles de la experiencia',
+      content: `
+        <strong>Fecha:</strong> ${escapeHtml(dateLabel)}<br/>
+        <strong>Hora:</strong> ${escapeHtml(timeLabel)}<br/>
+        <strong>Personas:</strong> ${reservation.guestsCount}<br/>
+        ${
+          reservation.specialRequest
+            ? `<strong>Notas especiales:</strong> ${escapeHtml(reservation.specialRequest)}`
+            : ''
+        }
+      `.trim(),
+    },
+    ...(dishesSection ? [dishesSection] : []),
+    {
+      heading: '¿Qué sigue?',
+      content:
+        'Te notificaremos automáticamente cuando el restaurante confirme tu mesa. También podrás consultar y gestionar tus reservas desde tu panel en FoodAI.',
+    },
+  ];
+
   const html = buildBaseEmail({
     preheader: `Reserva para ${dateLabel} a las ${timeLabel}`,
     title: 'Reserva registrada con éxito',
@@ -317,26 +356,7 @@ export const sendReservationCreatedEmail = async ({
       label: 'Restaurante',
       value: escapeHtml(reservation.restaurantName ?? 'Por confirmar'),
     },
-    sections: [
-      {
-        heading: 'Detalles de la experiencia',
-        content: `
-          <strong>Fecha:</strong> ${escapeHtml(dateLabel)}<br/>
-          <strong>Hora:</strong> ${escapeHtml(timeLabel)}<br/>
-          <strong>Personas:</strong> ${reservation.guestsCount}<br/>
-          ${
-            reservation.specialRequest
-              ? `<strong>Notas especiales:</strong> ${escapeHtml(reservation.specialRequest)}`
-              : ''
-          }
-        `.trim(),
-      },
-      {
-        heading: '¿Qué sigue?',
-        content:
-          'Te notificaremos automáticamente cuando el restaurante confirme tu mesa. También podrás consultar y gestionar tus reservas desde tu panel en FoodAI.',
-      },
-    ],
+    sections,
   });
 
   await sendMail({ to: email, subject, html });
@@ -431,5 +451,84 @@ export const sendReservationStatusEmail = async ({
   });
 
   await sendMail({ to: email, subject: copy.subject, html });
+};
+
+// Enviar notificación al restaurante sobre nueva reserva
+export const sendNewReservationToRestaurant = async ({
+  restaurantEmail,
+  restaurantName,
+  customerName,
+  customerEmail,
+  reservation,
+}: {
+  restaurantEmail: string;
+  restaurantName: string;
+  customerName: string;
+  customerEmail: string;
+  reservation: ReservationDetails;
+}) => {
+  const { dateLabel, timeLabel } = formatSchedule(reservation);
+  
+  const subject = `Nueva reserva recibida - ${customerName}`;
+
+  // Construir la lista de platos si existen
+  const dishesHtml = reservation.selectedDishesInfo && reservation.selectedDishesInfo.length > 0
+    ? `<div style="margin: 16px 0; padding: 16px; border-radius: 12px; background: #eff6ff; border: 1px solid #bfdbfe;">
+        <h4 style="margin: 0 0 12px; font-size: 14px; color: #1e40af; font-weight: 600;">🍽️ Platos Pre-seleccionados por el Cliente</h4>
+        <ul style="margin: 0; padding-left: 20px; color: #1e293b;">
+          ${reservation.selectedDishesInfo.map(dish => 
+            `<li style="margin: 6px 0;">
+              <strong>${escapeHtml(dish.name)}</strong> 
+              <span style="color: #3b82f6; font-weight: 600;">x ${dish.quantity}</span>
+              <span style="color: #64748b;">(${escapeHtml(dish.category)})</span> 
+              - <span style="color: #059669; font-weight: 600;">$${(dish.price * dish.quantity).toFixed(2)}</span>
+            </li>`
+          ).join('')}
+        </ul>
+        <p style="margin: 12px 0 0; font-size: 12px; color: #64748b; font-style: italic;">
+          Nota: Estos son platos de interés del cliente. Puede modificar su pedido al momento de confirmar la reserva.
+        </p>
+      </div>`
+    : '';
+
+  const html = buildBaseEmail({
+    preheader: `Nueva reserva de ${customerName} para ${dateLabel} a las ${timeLabel}`,
+    title: '🎉 Nueva Reserva Recibida',
+    greeting: `Hola equipo de ${escapeHtml(restaurantName)},`,
+    introLines: [
+      'Tienen una nueva reserva esperando confirmación en su restaurante.',
+      'A continuación encontrarán todos los detalles para preparar una experiencia excepcional.',
+    ],
+    highlight: {
+      label: 'Cliente',
+      value: escapeHtml(customerName),
+    },
+    sections: [
+      {
+        heading: '📅 Detalles de la Reserva',
+        content: `
+          <strong>Fecha:</strong> ${escapeHtml(dateLabel)}<br/>
+          <strong>Hora:</strong> ${escapeHtml(timeLabel)}<br/>
+          <strong>Número de personas:</strong> ${reservation.guestsCount}<br/>
+          <strong>Cliente:</strong> ${escapeHtml(customerName)}<br/>
+          <strong>Email del cliente:</strong> <a href="mailto:${escapeHtml(customerEmail)}" style="color: #3b82f6;">${escapeHtml(customerEmail)}</a><br/>
+          ${
+            reservation.specialRequest
+              ? `<strong>Solicitud especial:</strong> ${escapeHtml(reservation.specialRequest)}<br/>`
+              : ''
+          }
+        `.trim(),
+      },
+    ],
+    footerNote: 'Por favor confirma o rechaza esta reserva desde tu panel de FoodAI. El cliente recibirá una notificación automática con tu decisión.',
+  });
+
+  // Insertar la sección de platos justo antes del cierre del contenido
+  const htmlWithDishes = html.replace(
+    '</td>\n          </tr>\n          <tr>',
+    `${dishesHtml}</td>\n          </tr>\n          <tr>`
+  );
+
+  await sendMail({ to: restaurantEmail, subject, html: htmlWithDishes });
 };
 

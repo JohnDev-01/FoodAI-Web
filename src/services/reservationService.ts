@@ -3,7 +3,9 @@ import { supabaseClient } from './supabaseClient';
 import {
   sendReservationCreatedEmail,
   sendReservationStatusEmail,
+  sendNewReservationToRestaurant,
 } from './mailService';
+import { supabaseClient as supabase } from './supabaseClient';
 import type {
   CreateReservationPayload,
   ReservationWithRestaurant,
@@ -11,7 +13,13 @@ import type {
   UserRole,
   UserStatus,
   ReservationAdminView,
+  SelectedDish,
 } from '../types';
+
+interface SelectedDishDb {
+  dishId: string;
+  quantity: number;
+}
 
 interface ReservationDbRow {
   id: string;
@@ -23,6 +31,7 @@ interface ReservationDbRow {
   status: ReservationStatus;
   special_request: string | null;
   reason_cancellation: string | null;
+  selected_dishes: SelectedDishDb[] | null;
   created_at: string;
   updated_at: string;
   restaurant?: {
@@ -49,6 +58,7 @@ const mapReservation = (row: ReservationDbRow): ReservationWithRestaurant => ({
   status: row.status,
   specialRequest: row.special_request ?? undefined,
   reasonCancellation: row.reason_cancellation ?? undefined,
+  selectedDishes: row.selected_dishes ?? null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   restaurantName: row.restaurant?.name ?? null,
@@ -105,6 +115,7 @@ export async function createReservation(userId: string, payload: CreateReservati
       guests_count: payload.guestsCount,
       status: 'pending',
       special_request: payload.specialRequest ?? null,
+      selected_dishes: payload.selectedDishes ?? null,
     })
     .select(
       `
@@ -132,12 +143,36 @@ export async function createReservation(userId: string, payload: CreateReservati
   const mapped = mapReservation(row);
 
   const guestEmail = row.user?.email;
+  const guestName =
+    [row.user?.first_name, row.user?.last_name]
+      .map((piece) => piece?.trim())
+      .filter(Boolean)
+      .join(' ') || guestEmail || 'Cliente';
+
+  // Obtener información de los platos seleccionados si existen
+  let selectedDishesInfo: Array<{ name: string; price: number; category: string; quantity: number }> = [];
+  if (row.selected_dishes && row.selected_dishes.length > 0) {
+    const dishIds = row.selected_dishes.map(d => d.dishId);
+    const { data: dishesData } = await supabase
+      .from('dishes')
+      .select('id, name, price, category')
+      .in('id', dishIds);
+    
+    if (dishesData) {
+      selectedDishesInfo = dishesData.map(dish => {
+        const selectedDish = row.selected_dishes?.find(d => d.dishId === dish.id);
+        return {
+          name: dish.name,
+          price: dish.price,
+          category: dish.category,
+          quantity: selectedDish?.quantity || 1,
+        };
+      });
+    }
+  }
+
+  // Enviar correo al cliente
   if (guestEmail) {
-    const guestName =
-      [row.user?.first_name, row.user?.last_name]
-        .map((piece) => piece?.trim())
-        .filter(Boolean)
-        .join(' ') || guestEmail;
     await sendReservationCreatedEmail({
       email: guestEmail,
       fullName: guestName,
@@ -147,10 +182,37 @@ export async function createReservation(userId: string, payload: CreateReservati
         guestsCount: row.guests_count,
         restaurantName: row.restaurant?.name ?? null,
         specialRequest: row.special_request ?? undefined,
+        selectedDishesInfo: selectedDishesInfo.length > 0 ? selectedDishesInfo : undefined,
       },
     });
   }
 
+  // Enviar correo al restaurante
+  if (row.restaurant?.name) {
+    // Obtener el email del restaurante
+    const { data: restaurantData } = await supabase
+      .from('restaurants')
+      .select('email, owner_id')
+      .eq('id', row.restaurant_id)
+      .single();
+
+    if (restaurantData?.email) {
+      await sendNewReservationToRestaurant({
+        restaurantEmail: restaurantData.email,
+        restaurantName: row.restaurant.name,
+        customerName: guestName,
+        customerEmail: guestEmail || 'No proporcionado',
+        reservation: {
+          reservationDate: row.reservation_date,
+          reservationTime: row.reservation_time,
+          guestsCount: row.guests_count,
+          restaurantName: row.restaurant.name,
+          specialRequest: row.special_request ?? undefined,
+          selectedDishesInfo: selectedDishesInfo.length > 0 ? selectedDishesInfo : undefined,
+        },
+      });
+    }
+  }
 
   return mapped;
 }
@@ -386,6 +448,25 @@ export async function getPendingReservationsCount() {
 
   if (error) {
     throw error;
+  }
+
+  return count ?? 0;
+}
+
+export async function getPendingReservationsCountByRestaurant(restaurantId: string) {
+  if (!restaurantId) {
+    return 0;
+  }
+
+  const { count, error } = await supabaseClient
+    .from('reservations')
+    .select('*', { count: 'exact', head: true })
+    .eq('restaurant_id', restaurantId)
+    .eq('status', 'pending');
+
+  if (error) {
+    console.error('Error getting pending reservations count:', error);
+    return 0;
   }
 
   return count ?? 0;
