@@ -172,6 +172,12 @@ export interface OrderItem {
 
 export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 
+// Selected dish with quantity
+export interface SelectedDish {
+  dishId: string;
+  quantity: number;
+}
+
 // Reservation types
 export interface Reservation {
   id: string;
@@ -183,6 +189,7 @@ export interface Reservation {
   status: ReservationStatus;
   specialRequest?: string;
   reasonCancellation?: string;
+  selectedDishes?: SelectedDish[] | null; // Platos seleccionados con cantidades
   createdAt: string;
   updatedAt: string;
 }
@@ -207,6 +214,7 @@ export interface CreateReservationPayload {
   reservationTime: string;
   guestsCount: number;
   specialRequest?: string;
+  selectedDishes?: SelectedDish[];
 }
 
 // Cart types
@@ -233,21 +241,6 @@ export interface ChartData {
 }
 
 
-// API Response types
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  error?: string;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
 
 // Form types
 export interface LoginForm {
@@ -312,13 +305,6 @@ export interface CartContextType {
   isInCart: (itemId: string) => boolean;
 }
 
-// Socket types
-export interface SocketContextType {
-  socket: any;
-  isConnected: boolean;
-  connect: () => void;
-  disconnect: () => void;
-}
 
 // Loading state
 export interface LoadingState {

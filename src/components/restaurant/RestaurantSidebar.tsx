@@ -12,7 +12,7 @@ import {
 const navigation = [
   { name: 'Dashboard', href: ROUTES.RESTAURANT_DASHBOARD, icon: LayoutDashboard },
   { name: 'Reservas', href: ROUTES.RESTAURANT_RESERVATIONS, icon: Calendar },
-  { name: 'Menús', href: ROUTES.RESTAURANT_PREDICTIONS, icon: Menu },
+  { name: 'Menús', href: '/restaurant/menu', icon: Menu },
   { name: 'Analytics', href: ROUTES.RESTAURANT_ANALYTICS, icon: BarChart3 },
   { name: 'Configuración', href: '/restaurant/settings', icon: Settings },
 ];

@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-import { SocketProvider } from './context/SocketContext';
 import { ThemeProvider } from './context/ThemeContext';
 
 // Layouts
@@ -28,6 +27,7 @@ import { RestaurantOnboarding } from './pages/restaurant/Onboarding';
 import { RestaurantReservations } from './pages/restaurant/Reservations';
 import { RestaurantAnalytics } from './pages/restaurant/Analytics';
 import { RestaurantSettings } from './pages/restaurant/Settings';
+import { Menu } from './pages/restaurant/Menu';
 
 // Admin
 import { AdminDashboard } from './pages/admin/Dashboard';
@@ -43,10 +43,9 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <CartProvider>
-          <SocketProvider>
-            <Router>
-              <div className="App">
-                <Toaster
+          <Router>
+            <div className="App">
+              <Toaster
                   position="top-right"
                   toastOptions={{
                     duration: 4000,
@@ -112,6 +111,7 @@ function App() {
                   }>
                     <Route index element={<Navigate to="/restaurant/dashboard" replace />} />
                     <Route path="dashboard" element={<RestaurantDashboard />} />
+                    <Route path="menu" element={<Menu />} />
                     <Route path="reservations" element={<RestaurantReservations />} />
                     <Route path="analytics" element={<RestaurantAnalytics />} />
                     <Route path="settings" element={<RestaurantSettings />} />
@@ -137,7 +137,6 @@ function App() {
                 </Routes>
               </div>
             </Router>
-          </SocketProvider>
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>
