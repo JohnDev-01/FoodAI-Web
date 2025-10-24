@@ -120,7 +120,7 @@ export function Reservations() {
     const loadDishes = async () => {
       if (!selectedRestaurant?.id) {
         setDishes([]);
-        setSelectedDishes([]);
+        setSelectedDishes({});
         return;
       }
 
