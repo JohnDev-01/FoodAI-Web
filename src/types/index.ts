@@ -55,6 +55,12 @@ export interface Restaurant {
   status: RestaurantStatus;
   createdAt: string;
   updatedAt: string;
+  // Additional properties
+  website?: string | null;
+  openingHours?: string | null;
+  closingHours?: string | null;
+  capacity?: number | null;
+  cuisine?: string | null; // Legacy property for backward compatibility
 }
 
 // Restaurant creation/update types
@@ -62,30 +68,30 @@ export interface CreateRestaurantInput {
   ownerId: string;
   name: string;
   email: string;
-  phone?: string;
-  description?: string;
-  address?: string;
-  city?: string;
-  country?: string;
-  cuisineType?: string;
-  openTime?: string;
-  closeTime?: string;
-  logoUrl?: string;
+  phone?: string | null;
+  description?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  cuisineType?: string | null;
+  openTime?: string | null;
+  closeTime?: string | null;
+  logoUrl?: string | null;
   status?: RestaurantStatus;
 }
 
 export interface UpdateRestaurantInput {
   name?: string;
   email?: string;
-  phone?: string;
-  description?: string;
-  address?: string;
-  city?: string;
-  country?: string;
-  cuisineType?: string;
-  openTime?: string;
-  closeTime?: string;
-  logoUrl?: string;
+  phone?: string | null;
+  description?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  cuisineType?: string | null;
+  openTime?: string | null;
+  closeTime?: string | null;
+  logoUrl?: string | null;
   status?: RestaurantStatus;
   rating?: number;
 }
@@ -184,6 +190,7 @@ export interface Reservation {
 export interface ReservationWithRestaurant extends Reservation {
   restaurantName?: string | null;
   restaurantLogo?: string | null;
+  user?: User | null;
 }
 
 export interface ReservationAdminView extends ReservationWithRestaurant {
