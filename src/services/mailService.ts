@@ -1,4 +1,5 @@
-const MAIL_API_BASE_URL = 'https://eqv7ecjeolvi7q5ijpiu7zbaam0npwwf.lambda-url.us-east-1.on.aws/api/v1';
+// const MAIL_API_BASE_URL = 'https://eqv7ecjeolvi7q5ijpiu7zbaam0npwwf.lambda-url.us-east-1.on.aws/api/v1';
+const MAIL_API_BASE_URL = 'http://localhost:8000/api/v1';
 const MAIL_SEND_PATH = '/email/send';
 
 interface MailSendPayload {
