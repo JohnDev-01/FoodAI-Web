@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
-import { ReservationAnalytics } from '../../components/analytics/ReservationAnalytics';
+import { AiInsightsDashboard } from '../../components/analytics/AiInsightsDashboard';
 import { useAuth } from '../../context/AuthContext';
 import { getRestaurantByOwnerId } from '../../services/restaurantService';
-import { BarChart3, TrendingUp, Calendar, Users } from 'lucide-react';
+import { BarChart3, Users } from 'lucide-react';
 import type { Restaurant } from '../../types';
 
 export function RestaurantAnalytics() {
@@ -71,11 +71,11 @@ export function RestaurantAnalytics() {
             <BarChart3 className="h-6 w-6 text-blue-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Analytics de Reservas
+            Insights con IA
           </h1>
         </div>
         <p className="text-gray-600 dark:text-gray-400">
-          Estadísticas y tendencias de las reservas de {restaurant.name}
+          Predicciones y métricas inteligentes para {restaurant.name}
         </p>
       </div>
 
@@ -121,51 +121,8 @@ export function RestaurantAnalytics() {
         </CardContent>
       </Card>
 
-      {/* Analytics de reservas */}
-      <ReservationAnalytics restaurantId={restaurant.id} />
-
-      {/* Información adicional */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5" />
-            <span>Insights</span>
-          </CardTitle>
-          <CardDescription>
-            Información útil sobre el rendimiento de las reservas
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900 dark:text-white">Consejos para Mejorar</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li className="flex items-start space-x-2">
-                  <Calendar className="h-4 w-4 mt-0.5 text-blue-500" />
-                  <span>Confirma las reservas pendientes rápidamente</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <TrendingUp className="h-4 w-4 mt-0.5 text-green-500" />
-                  <span>Analiza los días de mayor demanda</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <Users className="h-4 w-4 mt-0.5 text-purple-500" />
-                  <span>Mantén un registro de las cancelaciones</span>
-                </li>
-              </ul>
-            </div>
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900 dark:text-white">Métricas Clave</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li>• Tasa de confirmación de reservas</li>
-                <li>• Tiempo promedio de respuesta</li>
-                <li>• Días de mayor actividad</li>
-                <li>• Patrones de cancelación</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Insights potenciados por IA */}
+      <AiInsightsDashboard restaurantId={restaurant.id} />
     </div>
   );
 }
