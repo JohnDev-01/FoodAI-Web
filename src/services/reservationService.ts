@@ -48,6 +48,7 @@ interface ReservationDbRow {
   } | null;
 }
 
+
 const mapReservation = (row: ReservationDbRow): ReservationWithRestaurant => ({
   id: row.id,
   userId: row.user_id,
@@ -470,6 +471,70 @@ export async function getPendingReservationsCountByRestaurant(restaurantId: stri
   }
 
   return count ?? 0;
+}
+
+// Nuevas funciones para modificación de reservaciones
+export async function checkReservationAvailability(
+  reservationId: string,
+  date: string,
+  time: string
+): Promise<{ available: boolean; message: string; existing_reservations: number }> {
+  const API_URL = 'http://localhost:8000/api/v1';
+  
+  try {
+    const response = await fetch(
+      `${API_URL}/reservations/${reservationId}/availability?date=${date}&time=${time}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Error verificando disponibilidad');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error checking availability:', error);
+    throw error;
+  }
+}
+
+export async function rescheduleReservation(
+  reservationId: string,
+  data: {
+    reservation_date: string;
+    reservation_time: string;
+    reason?: string;
+  }
+): Promise<any> {
+  const API_URL = 'http://localhost:8000/api/v1';
+  
+  try {
+    const response = await fetch(
+      `${API_URL}/reservations/${reservationId}/reschedule`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      }
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Error al modificar la reservación');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error rescheduling reservation:', error);
+    throw error;
+  }
 }
 
 export async function getRestaurantReservations(restaurantId: string): Promise<ReservationWithRestaurant[]> {

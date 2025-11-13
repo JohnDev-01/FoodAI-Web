@@ -13,6 +13,7 @@ import {
   Search,
   MapPin,
   X,
+  Edit2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -22,6 +23,7 @@ import type { ReservationStatus, ReservationWithRestaurant, Restaurant, Dish, Se
 import { createReservation, getReservationsByUserId, cancelReservation } from '../../services/reservationService';
 import { searchRestaurants } from '../../services/restaurantService';
 import { getDishesByRestaurant } from '../../services/dishService';
+import { RescheduleModal } from '../../components/RescheduleModal';
 
 type ReservationFormValues = {
   restaurantId: string;
@@ -63,6 +65,8 @@ export function Reservations() {
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [selectedDishes, setSelectedDishes] = useState<Record<string, number>>({});
   const [loadingDishes, setLoadingDishes] = useState<boolean>(false);
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState<boolean>(false);
+  const [reservationToReschedule, setReservationToReschedule] = useState<ReservationWithRestaurant | null>(null);
 
   // Obtener datos del restaurante desde la navegación
   const restaurantFromNavigation = location.state?.restaurant as Restaurant | undefined;
@@ -280,6 +284,27 @@ export function Reservations() {
     } catch (error) {
       console.error('Error al cancelar la reserva:', error);
       toast.error('No se pudo cancelar la reserva.');
+    }
+  };
+
+  const handleOpenReschedule = (reservation: ReservationWithRestaurant) => {
+    setReservationToReschedule(reservation);
+    setRescheduleModalOpen(true);
+  };
+
+  const handleRescheduleSuccess = async () => {
+    // Recargar las reservaciones después de modificar
+    if (user?.id) {
+      try {
+        setLoadingReservations(true);
+        const data = await getReservationsByUserId(user.id);
+        setReservations(data);
+      } catch (error) {
+        console.error('Error al recargar las reservas:', error);
+        toast.error('Error al actualizar las reservas');
+      } finally {
+        setLoadingReservations(false);
+      }
     }
   };
 
@@ -674,6 +699,17 @@ export function Reservations() {
                             )}
                             {statusLabel}
                           </span>
+                          {(reservation.status === 'pending' || reservation.status === 'confirmed') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-full border-white/30 text-white hover:bg-white/10"
+                              onClick={() => handleOpenReschedule(reservation)}
+                            >
+                              <Edit2 className="mr-1 h-4 w-4" />
+                              Modificar fecha/hora
+                            </Button>
+                          )}
                           {reservation.status === 'pending' && (
                             <Button
                               variant="outline"
@@ -681,7 +717,8 @@ export function Reservations() {
                               className="rounded-full border-white/30 text-white hover:bg-white/10"
                               onClick={() => handleCancelReservation(reservation.id)}
                             >
-                              Cancelar reserva
+                              <XCircle className="mr-1 h-4 w-4" />
+                              Cancelar
                             </Button>
                           )}
                         </div>
@@ -700,6 +737,23 @@ export function Reservations() {
         onSelect={handleRestaurantSelect}
         selectedRestaurantId={selectedRestaurant?.id ?? null}
       />
+      {reservationToReschedule && (
+        <RescheduleModal
+          isOpen={rescheduleModalOpen}
+          onClose={() => {
+            setRescheduleModalOpen(false);
+            setReservationToReschedule(null);
+          }}
+          reservation={{
+            id: reservationToReschedule.id,
+            reservationDate: reservationToReschedule.reservationDate,
+            reservationTime: reservationToReschedule.reservationTime,
+            restaurantName: reservationToReschedule.restaurantName || null,
+            guestsCount: reservationToReschedule.guestsCount
+          }}
+          onSuccess={handleRescheduleSuccess}
+        />
+      )}
     </div>
   );
 }
