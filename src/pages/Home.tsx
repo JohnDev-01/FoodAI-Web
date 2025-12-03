@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { ROUTES } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import { getReservationsByUserId } from '../services/reservationService';
@@ -119,71 +118,191 @@ export function Home() {
     };
   };
 
+  const heroHighlights = [
+    {
+      title: 'Impacto inmediato',
+      detail: 'Automatizamos la experiencia desde el descubrimiento hasta la fidelización.',
+    },
+    {
+      title: 'Comunidad leal',
+      detail: 'Diseñamos cada interacción para que el comensal regrese con entusiasmo.',
+    },
+    {
+      title: 'Operación impecable',
+      detail: 'Tu equipo recibe soporte continuo con insights accionables.',
+    },
+  ];
+
   const features = [
     {
-      title: 'Restaurantes Inteligentes',
-      description: 'Descubre restaurantes con tecnología de vanguardia y menús personalizados.',
-      icon: '🍽️',
+      title: 'Recomendaciones hiperpersonalizadas',
+      description: 'Nuestra IA propone el plato ideal considerando tus hábitos y contexto.',
+      symbol: 'IA',
+      badge: 'IA predictiva',
     },
     {
-      title: 'Pedidos en Tiempo Real',
-      description: 'Realiza pedidos y recibe actualizaciones en tiempo real del estado de tu orden.',
-      icon: '📱',
+      title: 'Gestión de reservas sin fricción',
+      description: 'Automatizamos recordatorios, confirmaciones y asignación de mesas para cero esperas.',
+      symbol: 'FX',
+      badge: 'Automatización',
     },
     {
-      title: 'Reservas Inteligentes',
-      description: 'Reserva tu mesa con anticipación y disfruta de una experiencia sin esperas.',
-      icon: '📅',
+      title: 'Analytics accionables',
+      description: 'Panel inteligente con insights de demanda, rotación y satisfacción listos para actuar.',
+      symbol: 'IQ',
+      badge: 'Insights',
     },
     {
-      title: 'Analytics Avanzados',
-      description: 'Los restaurantes pueden analizar su rendimiento y optimizar sus operaciones.',
-      icon: '📊',
+      title: 'Experiencias inmersivas',
+      description: 'Convierte cada visita en una historia memorable con storytelling gastronómico.',
+      symbol: 'UX',
+      badge: 'Engagement',
     },
   ];
 
   const cuisines = [
-    { name: 'Italiana', icon: '🍝', color: 'bg-red-100 text-red-800' },
-    { name: 'Mexicana', icon: '🌮', color: 'bg-green-100 text-green-800' },
-    { name: 'Asiática', icon: '🍜', color: 'bg-blue-100 text-blue-800' },
-    { name: 'Mediterránea', icon: '🥗', color: 'bg-yellow-100 text-yellow-800' },
-    { name: 'Americana', icon: '🍔', color: 'bg-purple-100 text-purple-800' },
-    { name: 'Francesa', icon: '🥐', color: 'bg-pink-100 text-pink-800' },
+    {
+      name: 'Italiana',
+      description: 'Sabores intensos y maridajes guiados por IA.',
+    },
+    {
+      name: 'Mexicana',
+      description: 'Tradición reinventada con experiencias inmersivas.',
+    },
+    {
+      name: 'Asiática',
+      description: 'Técnicas ancestrales con precisión futurista.',
+    },
+    {
+      name: 'Mediterránea',
+      description: 'Frescura consciente y narrativa sensorial.',
+    },
+    {
+      name: 'Americana',
+      description: 'Comfort food elevado con curvas de sabor dinámicas.',
+    },
+    {
+      name: 'Francesa',
+      description: 'Alta cocina guiada por data creativa.',
+    },
+  ];
+
+  const journeySteps = [
+    {
+      title: 'Explora con IA',
+      description: 'Descubre propuestas gastronómicas alineadas a tu mood y estilo.',
+      tag: 'Explora',
+    },
+    {
+      title: 'Reserva sin esperas',
+      description: 'Confirma tu mesa y recibe acompañamiento proactivo en cada fase.',
+      tag: 'Reserva',
+    },
+    {
+      title: 'Vive la experiencia',
+      description: 'La IA amplifica la visita con recomendaciones in situ y seguimiento emotivo.',
+      tag: 'Vive',
+    },
   ];
 
   return (
     <>
       {/* Hero Section */}
-      <section className="relative py-20 px-4 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="container mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-            Bienvenido a{' '}
-            <span className="text-blue-600 dark:text-blue-400">FoodAI</span>
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
-            La plataforma inteligente que revoluciona la experiencia gastronómica 
-            con tecnología de vanguardia y análisis predictivo.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {user?.role === 'restaurant' && (
-              <Link to={ROUTES.RESTAURANT_DASHBOARD}>
-                <Button size="lg" className="text-lg px-8 py-3">
-                  Ir al Dashboard
-                </Button>
-              </Link>
-            )}
-            <Link to={ROUTES.RESTAURANTS}>
-              <Button size="lg" className="text-lg px-8 py-3">
-                Explorar Restaurantes
-              </Button>
-            </Link>
-            {!user && (
-              <Link to={ROUTES.REGISTER}>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-3">
-                  Registrarse
-                </Button>
-              </Link>
-            )}
+      <section className="relative py-20 px-4 bg-gradient-to-b from-[#eef6ff] to-white dark:from-gray-950 dark:to-gray-900">
+        <div className="container mx-auto">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div className="text-left">
+              <p className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-600 dark:border-blue-500/30 dark:bg-white/10 dark:text-blue-200">
+                Nueva era gastronómica
+              </p>
+              <h1 className="mt-8 text-4xl font-bold leading-tight text-gray-900 md:text-5xl dark:text-white">
+                Bienvenido a{' '}
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                  FoodAI
+                </span>
+                , la plataforma que anticipa tus antojos.
+              </h1>
+              <p className="mt-6 text-lg text-gray-600 dark:text-gray-300 md:text-xl">
+                Storytelling sensorial, automatizaciones discretas y analítica inteligente para que la primera impresión sea impecable.
+              </p>
+              <div className="mt-8 flex flex-col flex-wrap gap-4 sm:flex-row">
+                {user?.role === 'restaurant' && (
+                  <Link to={ROUTES.RESTAURANT_DASHBOARD}>
+                    <Button size="lg" className="text-lg px-8 py-3">
+                      Ir al Dashboard
+                    </Button>
+                  </Link>
+                )}
+                <Link to={ROUTES.RESTAURANTS}>
+                  <Button size="lg" className="text-lg px-8 py-3">
+                    Explorar Restaurantes
+                  </Button>
+                </Link>
+                {!user && (
+                  <Link to={ROUTES.REGISTER}>
+                    <Button variant="outline" size="lg" className="text-lg px-8 py-3 border-2">
+                      Registrarse
+                    </Button>
+                  </Link>
+                )}
+              </div>
+              <div className="mt-10 space-y-4">
+                {heroHighlights.map((highlight) => (
+                  <div
+                    key={highlight.title}
+                    className="rounded-2xl border border-gray-200 bg-white/80 p-4 text-left dark:border-gray-800 dark:bg-gray-900/70"
+                  >
+                    <p className="text-base font-semibold text-gray-900 dark:text-white">{highlight.title}</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{highlight.detail}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  Respuestas guiadas
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                  Experiencias editoriales
+                </span>
+              </div>
+            </div>
+            <div className="rounded-3xl border border-white/50 bg-white/80 p-8 text-left shadow-xl backdrop-blur dark:border-white/10 dark:bg-gray-900/70">
+              <p className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Escenas FoodAI</p>
+              <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">Experiencias editoriales</p>
+              <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+                Compartimos con tu equipo guiones breves para recibir, sorprender y despedir a cada comensal con calma.
+              </p>
+              <div className="mt-6 space-y-3">
+                {[
+                  {
+                    title: 'Curaduría sensorial',
+                    detail: 'Storytelling gastronómico coherente de principio a fin.',
+                  },
+                  {
+                    title: 'Ejecución ligera',
+                    detail: 'Automatizaciones discretas que acompañan al equipo.',
+                  },
+                  {
+                    title: 'Seguimiento humano',
+                    detail: 'Mensajes cálidos antes y después de cada visita.',
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="rounded-2xl border border-gray-200/70 bg-white/70 p-4 dark:border-gray-800/60 dark:bg-gray-950/40">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{item.title}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 flex flex-wrap gap-3 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                {['Ambientación', 'Hospitalidad', 'Fidelización'].map((tag) => (
+                  <span key={tag} className="rounded-full border border-gray-200 px-3 py-1 dark:border-gray-700">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -386,63 +505,81 @@ export function Home() {
       )}
 
       {/* Features Section */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 bg-white dark:bg-gray-950">
         <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-blue-500 dark:text-blue-300">
               ¿Por qué elegir FoodAI?
+            </p>
+            <h2 className="mt-4 text-3xl font-bold text-gray-900 md:text-4xl dark:text-white">
+              Simplificamos la innovación gastronómica.
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Nuestra plataforma combina inteligencia artificial con análisis de datos 
-              para ofrecer la mejor experiencia gastronómica.
+            <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
+              Seleccionamos solo lo esencial para explicar con claridad cómo conectamos datos, hospitalidad y creatividad culinaria.
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow duration-200">
-                <CardHeader>
-                  <div className="text-4xl mb-4">{feature.icon}</div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
+          <div className="mt-12 grid gap-6 md:grid-cols-2">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="rounded-2xl border border-gray-200 bg-white p-6 text-left transition hover:border-blue-200 dark:border-gray-800 dark:bg-gray-900"
+              >
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-sm font-semibold text-white">
+                  {feature.symbol}
+                </div>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">
+                  {feature.badge}
+                </p>
+                <h3 className="mt-2 text-xl font-semibold text-gray-900 dark:text-white">{feature.title}</h3>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{feature.description}</p>
+              </div>
             ))}
+          </div>
+          <div className="mt-12 rounded-3xl border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-gray-900/80">
+            <p className="text-sm font-semibold uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">Tu recorrido</p>
+            <div className="mt-6 grid gap-6 sm:grid-cols-3">
+              {journeySteps.map((step) => (
+                <div key={step.title}>
+                  <span className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500 dark:text-blue-300">
+                    {step.tag}
+                  </span>
+                  <h4 className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">{step.title}</h4>
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{step.description}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Cuisines Section */}
-      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-800">
+      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <div className="mx-auto mb-12 max-w-3xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
               Explora Diferentes Cocinas
+            </p>
+            <h2 className="mt-3 text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
+              Selecciona tu universo gastronómico.
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Descubre una amplia variedad de restaurantes con diferentes tipos de cocina.
+            <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
+              Cada categoría combina curaduría humana y herramientas inteligentes para que descubras propuestas auténticas.
             </p>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {cuisines.map((cuisine) => (
               <Link
                 key={cuisine.name}
                 to={`${ROUTES.RESTAURANTS}?cuisine=${cuisine.name.toLowerCase()}`}
-                className="group"
+                className="rounded-2xl border border-gray-200 bg-white p-6 text-left transition hover:border-blue-200 dark:border-gray-800 dark:bg-gray-900"
               >
-                <Card className="text-center hover:shadow-lg transition-shadow duration-200">
-                  <CardContent className="p-6">
-                    <div className="text-3xl mb-2">{cuisine.icon}</div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                      {cuisine.name}
-                    </h3>
-                  </CardContent>
-                </Card>
+                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">Colección</p>
+                <h3 className="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{cuisine.name}</h3>
+                <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{cuisine.description}</p>
+                <span className="mt-6 inline-flex items-center text-sm font-semibold text-blue-600 dark:text-blue-300">
+                  Ver restaurantes
+                  <span aria-hidden="true" className="ml-1">→</span>
+                </span>
               </Link>
             ))}
           </div>
